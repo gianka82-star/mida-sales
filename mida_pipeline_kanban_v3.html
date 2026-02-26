@@ -1129,6 +1129,9 @@
                     <button class="btn btn-secondary" onclick="exportToExcel()">
                         📥 Esporta CSV
                     </button>
+                    <button class="btn btn-success" onclick="forceSave()" style="background: var(--mida-orange);">
+                        💾 Salva su Database
+                    </button>
                     <button class="btn btn-primary" onclick="loadPipeline()" style="background: var(--mida-purple);">
                         🔄 Ricarica Dati
                     </button>
@@ -3146,8 +3149,21 @@
             await supabaseRequest('DELETE', 'deals', null, `?id=eq.${dealId}`);
         }
 
-        // Show save indicator
-        function showSaveIndicator(text = '✓ Salvato automaticamente') {
+        // Force save all current AM deals to Supabase
+        async function forceSave() {
+            const btn = document.querySelector('button[onclick="forceSave()"]');
+            if (btn) { btn.innerHTML = '⏳ Salvataggio...'; btn.disabled = true; }
+            try {
+                await saveToLocalStorage();
+                if (btn) { btn.innerHTML = '✅ Salvato!'; }
+                setTimeout(() => {
+                    if (btn) { btn.innerHTML = '💾 Salva su Database'; btn.disabled = false; }
+                }, 2000);
+            } catch(e) {
+                if (btn) { btn.innerHTML = '❌ Errore'; btn.disabled = false; }
+                alert('Errore salvataggio: ' + e.message);
+            }
+        }
             const indicator = document.getElementById('saveIndicator');
             indicator.textContent = text;
             indicator.classList.add('active');
