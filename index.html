@@ -634,7 +634,7 @@
                         </button>
                     </a>
 
-                    <a href="https://sites.app-mida.biz/SalesReviewMeeting/mida_sales_dashboard_v2.html" class="app-card dashboard">
+                    <a href="mida_sales_dashboard_v2.html" class="app-card dashboard">
                         <div class="app-icon-wrapper">
                             <div class="app-icon">📈</div>
                         </div>
@@ -801,11 +801,11 @@
             
             if (userData && userData.username) {
                 const username = userData.username; // es: marco.poggi
-                const pipelineUrl = `https://sites.app-mida.biz/SalesReviewMeeting/mida_pipeline_kanban_v2.html?am=${encodeURIComponent(username)}`;
+                const pipelineUrl = `https://giancarlo-mida.github.io/mida-sales/mida_pipeline_kanban_v3.html?am=${encodeURIComponent(username)}`;
                 window.location.href = pipelineUrl;
             } else {
                 // Fallback se no session
-                window.location.href = 'https://sites.app-mida.biz/SalesReviewMeeting/mida_pipeline_kanban_v2.html';
+                window.location.href = 'https://giancarlo-mida.github.io/mida-sales/mida_pipeline_kanban_v3.html';
             }
         }
 
