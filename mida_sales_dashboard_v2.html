@@ -1,0 +1,3383 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>MIDA Sales Intelligence Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --mida-navy: #2d2654;
+            --mida-purple-dark: #4e3b7e;
+            --mida-purple: #6b5b95;
+            --mida-pink: #bc6c8e;
+            --mida-coral: #dd8577;
+            --mida-orange: #ee9955;
+            --mida-purple-light: #9b8db3;
+            --mida-pink-light: #d4a5b3;
+            --mida-coral-light: #f0b5a1;
+            --mida-orange-light: #f5c899;
+            --mida-gray: #6b7280;
+            --mida-light-gray: #f3f4f6;
+            --mida-border: #e5e7eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f9fafb;
+            color: var(--mida-navy);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: manipulation;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Better touch target sizes */
+        button, a, input, select {
+            min-height: 44px;
+            -webkit-tap-highlight-color: rgba(107, 91, 149, 0.1);
+        }
+
+        /* Prevent text selection on interactive elements */
+        .btn, .tab-btn, .filter-btn {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .dashboard-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            border: 2px solid var(--mida-light-gray);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            color: var(--mida-navy);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .header-left p {
+            color: var(--mida-gray);
+            font-size: 14px;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            background: rgba(107, 91, 149, 0.1);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--mida-navy);
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .home-btn:hover {
+            background: var(--mida-purple);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .import-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* Desktop Actions */
+        .desktop-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .mobile-menu {
+            display: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--mida-purple);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--mida-purple-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 91, 149, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--mida-navy);
+            border: 2px solid var(--mida-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--mida-light-gray);
+            border-color: var(--mida-purple);
+        }
+
+        .header-filters {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 16px;
+            background: var(--mida-light-gray);
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: var(--mida-navy);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 2px solid var(--mida-border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: var(--mida-navy);
+            cursor: pointer;
+            min-width: 200px;
+            font-weight: 500;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--mida-purple);
+            box-shadow: 0 0 0 3px rgba(107, 91, 149, 0.1);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--card-color);
+            transition: all 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--mida-gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .kpi-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            margin-bottom: 12px;
+        }
+
+        .kpi-subtitle {
+            font-size: 14px;
+            color: var(--mida-gray);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kpi-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .kpi-trend.up {
+            background: rgba(238, 153, 85, 0.1);
+            color: var(--mida-orange);
+        }
+
+        .kpi-trend.down {
+            background: rgba(221, 133, 119, 0.1);
+            color: var(--mida-coral);
+        }
+
+        /* Tabs */
+        .tabs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 24px;
+            border: 2px solid var(--mida-light-gray);
+        }
+
+        .tabs-header {
+            display: flex;
+            border-bottom: 3px solid var(--mida-border);
+            background: #f9fafb;
+            overflow-x: auto;
+            gap: 4px;
+            padding: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            min-width: 180px;
+            padding: 20px 32px;
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--mida-gray);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab-btn:hover {
+            background: white;
+            color: var(--mida-purple);
+            transform: translateY(-2px);
+            border-color: var(--mida-purple);
+            box-shadow: 0 4px 12px rgba(107, 91, 149, 0.15);
+        }
+
+        .tab-btn.active {
+            color: white;
+            background: var(--mida-purple);
+            border-color: var(--mida-purple);
+            box-shadow: 0 4px 16px rgba(107, 91, 149, 0.3);
+            transform: scale(1.02);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 32px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Funnel Visualization */
+        .funnel-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .funnel-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 40px 20px;
+            background: linear-gradient(to bottom, #f9fafb 0%, #ffffff 100%);
+            border-radius: 12px;
+        }
+
+        .funnel-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 20px;
+            background: var(--stage-color);
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            cursor: pointer;
+            border-left: 6px solid transparent;
+        }
+
+        .funnel-stage:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        /* Funnel shape with decreasing width */
+        .funnel-stage[data-stage="v0"] {
+            width: 95%;
+            max-width: 900px;
+        }
+
+        .funnel-stage[data-stage="v1"] {
+            width: 85%;
+            max-width: 800px;
+        }
+
+        .funnel-stage[data-stage="v2"] {
+            width: 75%;
+            max-width: 700px;
+        }
+
+        .funnel-stage[data-stage="v3"] {
+            width: 65%;
+            max-width: 600px;
+        }
+
+        .funnel-stage[data-stage="won"] {
+            width: 55%;
+            max-width: 500px;
+        }
+
+        .funnel-stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
+        }
+
+        .funnel-stage-label {
+            font-weight: 700;
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .funnel-stage-metrics {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .funnel-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .funnel-count {
+            font-size: 14px;
+            color: rgba(255,255,255,0.95);
+            font-weight: 600;
+            background: rgba(0,0,0,0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .funnel-probability {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.95);
+            background: rgba(0,0,0,0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        /* Connector arrows between stages */
+        .funnel-stage::after {
+            content: '▼';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--stage-color);
+            font-size: 16px;
+            opacity: 0.4;
+        }
+
+        .funnel-stage[data-stage="won"]::after {
+            content: '';
+        }
+
+        /* Quarter Analysis */
+        .quarter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .quarter-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-top: 5px solid var(--quarter-color);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .quarter-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .quarter-label {
+            font-size: 13px;
+            color: var(--mida-gray);
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quarter-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            margin-bottom: 12px;
+        }
+
+        .quarter-deals {
+            font-size: 14px;
+            color: var(--mida-gray);
+            font-weight: 500;
+        }
+
+        /* Pipeline Table */
+        .pipeline-table-container {
+            overflow-x: auto;
+            margin-top: 24px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* Search input styling */
+        #searchPipeline:focus,
+        #searchQuarter:focus {
+            outline: none;
+            border-color: var(--mida-purple);
+            box-shadow: 0 0 0 3px rgba(107, 91, 149, 0.1);
+        }
+
+        /* Hide filtered rows */
+        .pipeline-table tbody tr.hidden {
+            display: none;
+        }
+
+        .pipeline-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .pipeline-table th {
+            background: var(--mida-light-gray);
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--mida-navy);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--mida-border);
+            transition: background 0.2s;
+        }
+        
+        .pipeline-table th:hover {
+            background: #e5e5e5;
+        }
+        
+        .sort-indicator {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 10px;
+            color: var(--mida-gray);
+            opacity: 0.5;
+        }
+        
+        .sort-indicator.active {
+            opacity: 1;
+            color: var(--mida-purple);
+        }
+
+        .pipeline-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--mida-border);
+            cursor: pointer;
+        }
+
+        .pipeline-table tr:hover {
+            background: rgba(107, 91, 149, 0.08);
+        }
+        
+        .pipeline-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .deal-customer {
+            font-weight: 700;
+            color: var(--mida-navy);
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .deal-title {
+            font-size: 13px;
+            color: var(--mida-gray);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-v0 { background: rgba(155, 141, 179, 0.15); color: #9b8db3; }
+        .status-v1 { background: rgba(107, 91, 149, 0.15); color: #6b5b95; }
+        .status-v2 { background: rgba(188, 108, 142, 0.15); color: #bc6c8e; }
+        .status-v3 { background: rgba(221, 133, 119, 0.15); color: #dd8577; }
+        .status-won { background: rgba(238, 153, 85, 0.15); color: #ee9955; }
+
+        .probability-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .probability-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--mida-light-gray);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: var(--mida-purple);
+            border-radius: 4px;
+        }
+
+        .probability-text {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            min-width: 40px;
+        }
+
+        /* Alert Box */
+        .alert-box {
+            background: rgba(221, 133, 119, 0.08);
+            border-left: 4px solid var(--mida-coral);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            color: var(--mida-coral);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+        }
+
+        .alert-list {
+            font-size: 14px;
+            color: var(--mida-navy);
+            line-height: 1.8;
+        }
+
+        /* Division Cards */
+        .division-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .division-card {
+            background: white;
+            border: 2px solid var(--mida-border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s;
+        }
+
+        .division-card:hover {
+            border-color: var(--mida-purple);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .division-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--mida-light-gray);
+        }
+
+        .division-name {
+            font-weight: 700;
+            color: var(--mida-navy);
+            font-size: 16px;
+        }
+
+        .division-badge {
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            background: var(--badge-bg);
+            color: var(--badge-color);
+        }
+
+        .division-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .division-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .division-stat-label {
+            font-size: 11px;
+            color: var(--mida-gray);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .division-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--mida-navy);
+        }
+
+        /* Import Status */
+        .import-status {
+            padding: 16px 20px;
+            background: rgba(238, 153, 85, 0.1);
+            border-left: 4px solid var(--mida-orange);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .import-status.active {
+            display: block;
+        }
+
+        .import-status-title {
+            font-weight: 700;
+            color: var(--mida-orange);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .import-status-text {
+            font-size: 13px;
+            color: var(--mida-navy);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 16px;
+            }
+
+            .header-top {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+
+            .header-left h1 {
+                font-size: 20px;
+            }
+
+            .header-left p {
+                font-size: 13px;
+            }
+
+            .home-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+            .import-section {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .desktop-actions {
+                display: none;
+            }
+            
+            .mobile-menu {
+                display: block;
+                position: relative;
+                width: 100%;
+            }
+            
+            .hamburger-btn {
+                padding: 12px 20px;
+                background: var(--mida-purple);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 15px;
+                width: 100%;
+            }
+            
+            .mobile-menu-dropdown {
+                display: none;
+                position: absolute;
+                top: calc(100% + 8px);
+                right: 0;
+                left: 0;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                z-index: 1000;
+                overflow: hidden;
+            }
+            
+            .mobile-menu-dropdown.active {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .mobile-menu-dropdown button {
+                padding: 16px 20px;
+                border: none;
+                background: white;
+                text-align: left;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.2s;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 15px;
+            }
+            
+            .mobile-menu-dropdown button:last-child {
+                border-bottom: none;
+            }
+            
+            .mobile-menu-dropdown button:hover {
+                background: #f9fafb;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-filters {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            select {
+                width: 100%;
+                min-width: 100%;
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .kpi-card {
+                padding: 20px;
+            }
+
+            .kpi-label {
+                font-size: 12px;
+            }
+
+            .kpi-value {
+                font-size: 28px;
+            }
+
+            .kpi-subtitle {
+                font-size: 13px;
+            }
+
+            .tabs-header {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding: 4px;
+            }
+
+            .tabs-header::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-btn {
+                min-width: 140px;
+                padding: 16px 20px;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+            .tab-content {
+                padding: 16px;
+            }
+
+            .section-title {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+
+            /* Quarter Analysis Filters Mobile */
+            .quarter-filters {
+                padding: 16px !important;
+                gap: 12px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            .quarter-filters > span {
+                font-size: 12px !important;
+            }
+
+            .quarter-filters > div[style*="display: flex"] {
+                width: 100% !important;
+                flex-wrap: wrap !important;
+            }
+
+            .quarter-filters button {
+                flex: 1 !important;
+                min-width: 60px !important;
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+            }
+
+            .quarter-filters > div[style*="width: 2px"] {
+                display: none !important;
+            }
+
+            #quarterStageFilterInfo {
+                padding: 12px !important;
+                font-size: 13px !important;
+            }
+
+            /* Funnel Mobile */
+            .funnel-container {
+                padding: 20px 10px;
+            }
+
+            .funnel-stage {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 16px;
+            }
+
+            .funnel-stage::after {
+                font-size: 14px;
+                bottom: -18px;
+            }
+
+            .funnel-stage-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+
+            .funnel-stage-label {
+                font-size: 14px;
+                text-align: center;
+            }
+
+            .funnel-stage-metrics {
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .funnel-value {
+                font-size: 18px;
+            }
+
+            .funnel-count, .funnel-probability {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+
+            /* Quarter Grid Mobile */
+            .quarter-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .quarter-card {
+                padding: 20px;
+            }
+
+            .quarter-value {
+                font-size: 26px;
+            }
+
+            .quarter-deals {
+                font-size: 13px;
+            }
+
+            /* Tables Mobile */
+            .pipeline-table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding: 16px;
+            }
+
+            .pipeline-table {
+                min-width: 800px;
+                font-size: 13px;
+            }
+
+            .pipeline-table th {
+                padding: 10px 12px;
+                font-size: 11px;
+            }
+
+            .pipeline-table td {
+                padding: 12px;
+            }
+
+            .deal-customer {
+                font-size: 13px;
+            }
+
+            .deal-title {
+                font-size: 12px;
+            }
+
+            .status-badge {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+
+            /* Division Grid Mobile */
+            .division-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .division-card {
+                padding: 20px;
+            }
+
+            .division-name {
+                font-size: 15px;
+            }
+
+            .division-stat-label {
+                font-size: 10px;
+            }
+
+            .division-stat-value {
+                font-size: 18px;
+            }
+
+            /* Alert Box Mobile */
+            .alert-box {
+                padding: 16px;
+            }
+
+            .alert-title {
+                font-size: 14px;
+            }
+
+            .alert-list {
+                font-size: 13px;
+            }
+
+            /* Import Status Mobile */
+            .import-status {
+                padding: 12px 16px;
+            }
+
+            .import-status-title {
+                font-size: 13px;
+            }
+
+            .import-status-text {
+                font-size: 12px;
+            }
+
+            .probability-indicator {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .probability-bar {
+                height: 6px;
+            }
+
+            .probability-text {
+                text-align: center;
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-left h1 {
+                font-size: 18px;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+
+            .tab-btn {
+                min-width: 120px;
+                padding: 14px 16px;
+                font-size: 13px;
+            }
+
+            .tab-btn span[style*="font-size: 22px"] {
+                font-size: 18px !important;
+            }
+
+            .funnel-value {
+                font-size: 14px;
+            }
+
+            .quarter-value {
+                font-size: 22px;
+            }
+
+            .section-title {
+                font-size: 15px;
+            }
+
+            .quarter-filters button {
+                font-size: 11px !important;
+                padding: 6px 8px !important;
+            }
+
+            .division-stat-value {
+                font-size: 16px;
+            }
+        }
+        
+        /* ========================================
+           MODAL STYLES - CRITICAL FIX
+           ======================================== */
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active,
+        .modal[style*="display: block"],
+        .modal[style*="display: flex"] {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            margin: auto;
+            padding: 0;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            background: var(--mida-purple);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .close-btn {
+            color: white;
+            font-size: 32px;
+            font-weight: 300;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .modal-footer {
+            padding: 16px 24px;
+            background: var(--mida-light-gray);
+            border-radius: 0 0 16px 16px;
+        }
+        
+        /* Form groups in modal */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--mida-navy);
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--mida-light-gray);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--mida-purple);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
+                    <div>
+                        <h1>MIDA Sales Intelligence</h1>
+                        <p>Dashboard Commerciale • Consolidamento Pipeline</p>
+                    </div>
+                    <a href="https://sites.app-mida.biz/SalesReviewMeeting/" class="home-btn">
+                        🏠 Home
+                    </a>
+                </div>
+                <div class="import-section">
+                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDashboardData()">
+                    
+                    <!-- Desktop: bottoni normali -->
+                    <div class="desktop-actions">
+                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+                            📥 Importa da File
+                        </button>
+                        <button class="btn btn-success" onclick="importFromGoogleDrive()" style="background: var(--mida-orange);">
+                            ☁️ Importa da Google Drive
+                        </button>
+                        <button class="btn btn-primary" onclick="exportAllOpportunitiesCSV()" style="background: var(--mida-purple);">
+                            📊 Esporta CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="openBenchmarkModal()">
+                            🎯 Benchmark
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearData()">
+                            🗑️ Reset Dati
+                        </button>
+                    </div>
+                    
+                    <!-- Mobile: hamburger menu -->
+                    <div class="mobile-menu">
+                        <button class="hamburger-btn" onclick="toggleMobileMenu()">
+                            ☰ Menu
+                        </button>
+                        
+                        <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
+                            <button onclick="document.getElementById('importFile').click(); toggleMobileMenu()">
+                                📥 Importa File
+                            </button>
+                            <button onclick="importFromGoogleDrive(); toggleMobileMenu()">
+                                ☁️ Google Drive
+                            </button>
+                            <button onclick="openBenchmarkModal(); toggleMobileMenu()">
+                                🎯 Benchmark
+                            </button>
+                            <button onclick="clearData(); toggleMobileMenu()">
+                                🗑️ Reset Dati
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Status -->
+            <div class="import-status" id="importStatus">
+                <div class="import-status-title">✅ Dati Importati</div>
+                <div class="import-status-text" id="importStatusText"></div>
+            </div>
+            
+            <div class="header-filters">
+                <div class="filter-group">
+                    <label>Account Manager</label>
+                    <select id="amFilter" onchange="applyFilters()">
+                        <option value="all">Tutti gli AM</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="divisionFilterGroup">
+                    <label>Business Unit</label>
+                    <select id="divisionFilter" onchange="applyFilters()">
+                        <option value="all">Tutte le divisioni</option>
+                        <option value="People Development">People Development</option>
+                        <option value="HR Advisory">HR Advisory</option>
+                        <option value="Change & Adoption">Change & Adoption</option>
+                        <option value="Sales Boost">Sales Boost</option>
+                        <option value="Innovation">Innovation</option>
+                        <option value="Digital Products">Digital Products</option>
+                        <option value="Communication">Communication</option>
+                    </select>
+                </div>
+                <div class="filter-group" id="periodFilterGroup">
+                    <label>Periodo</label>
+                    <select id="periodFilter" onchange="applyFilters()">
+                        <option value="2026">Anno 2026</option>
+                        <option value="q1">Q1 2026</option>
+                        <option value="q2">Q2 2026</option>
+                        <option value="q3">Q3 2026</option>
+                        <option value="q4">Q4 2026</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card" style="--card-color: var(--mida-purple);">
+                <div class="kpi-label">Totale Pipeline</div>
+                <div class="kpi-value" id="totalPipeline">€ 0</div>
+                <div class="kpi-subtitle">
+                    <span id="totalDealsCount">0 opportunità</span>
+                </div>
+            </div>
+            <div class="kpi-card" style="--card-color: var(--mida-pink);">
+                <div class="kpi-label">Weighted Pipeline</div>
+                <div class="kpi-value" id="weightedPipeline">€ 0</div>
+                <div class="kpi-subtitle">
+                    Forecast ponderato
+                </div>
+            </div>
+            <div class="kpi-card" style="--card-color: var(--mida-coral);">
+                <div class="kpi-label">Pipeline 2026</div>
+                <div class="kpi-value" id="pipeline2026">€ 0</div>
+                <div class="kpi-subtitle">
+                    Distribuzione quarter
+                </div>
+            </div>
+            <div class="kpi-card" style="--card-color: var(--mida-orange);">
+                <div class="kpi-label">WON YTD</div>
+                <div class="kpi-value" id="totalWon">€ 0</div>
+                <div class="kpi-subtitle">
+                    <span id="wonDealsCount">0 deal</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="switchTab('funnel')">
+                    <span style="font-size: 22px; margin-right: 8px;">📊</span>
+                    <span>Executive Funnel</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('quarters')">
+                    <span style="font-size: 22px; margin-right: 8px;">📅</span>
+                    <span>Quarter Analysis</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('divisions')">
+                    <span style="font-size: 22px; margin-right: 8px;">📈</span>
+                    <span>Performance Business Unit</span>
+                </button>
+            </div>
+
+            <!-- Tab 1: Executive Funnel -->
+            <div id="tab-funnel" class="tab-content active">
+                <div class="funnel-section">
+                    <div class="section-title">
+                        🔄 Funnel di Vendita • Flow Opportunità
+                    </div>
+                    
+                    <div class="funnel-container" id="funnelContainer">
+                        <!-- Funnel stages will be populated here -->
+                    </div>
+
+                    <div class="alert-box" id="alertBox" style="display: none;">
+                        <div class="alert-title">
+                            ⚠️ Deal a Rischio - Richiede Attenzione
+                        </div>
+                        <div class="alert-list" id="alertList"></div>
+                    </div>
+                </div>
+
+                <div class="funnel-section" style="margin-top: 40px;">
+                    <div class="section-title">
+                        📋 Top Opportunità in Pipeline
+                    </div>
+                    
+                    <!-- Search Box -->
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="searchPipeline" placeholder="🔍 Cerca per cliente, progetto, business unit, owner..." 
+                               oninput="filterPipelineTable()" 
+                               style="width: 100%; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                    </div>
+                    
+                    <div class="pipeline-table-container">
+                        <table class="pipeline-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortPipelineTable('customer')" style="cursor: pointer;">
+                                        Cliente & Progetto <span class="sort-indicator" data-column="customer"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('division')" style="cursor: pointer;">
+                                        Business Unit <span class="sort-indicator" data-column="division"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('value')" style="cursor: pointer;">
+                                        Valore <span class="sort-indicator" data-column="value"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('stage')" style="cursor: pointer;">
+                                        Stage <span class="sort-indicator" data-column="stage"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('probability')" style="cursor: pointer;">
+                                        Probabilità <span class="sort-indicator" data-column="probability"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('date')" style="cursor: pointer;">
+                                        Data Stimata <span class="sort-indicator" data-column="date"></span>
+                                    </th>
+                                    <th onclick="sortPipelineTable('owner')" style="cursor: pointer;">
+                                        Owner <span class="sort-indicator" data-column="owner"></span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="pipelineTableBody">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--mida-gray);">
+                                        Importa i dati dalla Pipeline Update per visualizzare le opportunità
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Quarter Analysis -->
+            <div id="tab-quarters" class="tab-content">
+                <!-- Filters -->
+                <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 2px solid var(--mida-light-gray);">
+                    <span style="font-weight: 700; color: var(--mida-navy); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Visualizza:</span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="filter-btn active" data-filter="total" onclick="setQuarterViewFilter('total')" style="padding: 10px 20px; background: var(--mida-purple); color: white; border: 2px solid var(--mida-purple); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            Totale
+                        </button>
+                        <button class="filter-btn" data-filter="weighted" onclick="setQuarterViewFilter('weighted')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            Totale Ponderato
+                        </button>
+                    </div>
+                    
+                    <div style="width: 2px; height: 32px; background: var(--mida-border);"></div>
+                    
+                    <span style="font-weight: 700; color: var(--mida-navy); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Filtra per Stage:</span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="stage-filter-btn active" data-stage="all" onclick="setQuarterStageFilter('all')" style="padding: 10px 20px; background: var(--mida-purple); color: white; border: 2px solid var(--mida-purple); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            Tutti
+                        </button>
+                        <button class="stage-filter-btn" data-stage="v0" onclick="setQuarterStageFilter('v0')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #9b8db3; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            V0
+                        </button>
+                        <button class="stage-filter-btn" data-stage="v1" onclick="setQuarterStageFilter('v1')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #6b5b95; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            V1
+                        </button>
+                        <button class="stage-filter-btn" data-stage="v2" onclick="setQuarterStageFilter('v2')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #bc6c8e; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            V2
+                        </button>
+                        <button class="stage-filter-btn" data-stage="v3" onclick="setQuarterStageFilter('v3')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #dd8577; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            V3
+                        </button>
+                        <button class="stage-filter-btn" data-stage="won" onclick="setQuarterStageFilter('won')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #ee9955; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                            WON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stage Filter Info -->
+                <div id="quarterStageFilterInfo" style="display: none; background: rgba(107, 91, 149, 0.05); padding: 16px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--mida-purple);">
+                    <strong style="color: var(--mida-purple);">🔍 Filtro Attivo:</strong>
+                    <span id="quarterStageFilterText" style="color: var(--mida-navy); margin-left: 8px;"></span>
+                </div>
+
+                <div class="funnel-section">
+                    <div class="section-title">
+                        📊 Distribuzione Valore per Quarter 2026
+                    </div>
+                    
+                    <div class="quarter-grid">
+                        <div class="quarter-card" style="--quarter-color: #6b5b95;">
+                            <div class="quarter-label">Q1 2026</div>
+                            <div class="quarter-value" id="q1-total">€ 0</div>
+                            <div class="quarter-deals" id="q1-deals">0 opportunità</div>
+                        </div>
+                        <div class="quarter-card" style="--quarter-color: #bc6c8e;">
+                            <div class="quarter-label">Q2 2026</div>
+                            <div class="quarter-value" id="q2-total">€ 0</div>
+                            <div class="quarter-deals" id="q2-deals">0 opportunità</div>
+                        </div>
+                        <div class="quarter-card" style="--quarter-color: #dd8577;">
+                            <div class="quarter-label">Q3 2026</div>
+                            <div class="quarter-value" id="q3-total">€ 0</div>
+                            <div class="quarter-deals" id="q3-deals">0 opportunità</div>
+                        </div>
+                        <div class="quarter-card" style="--quarter-color: #ee9955;">
+                            <div class="quarter-label">Q4 2026</div>
+                            <div class="quarter-value" id="q4-total">€ 0</div>
+                            <div class="quarter-deals" id="q4-deals">0 opportunità</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="funnel-section" style="margin-top: 40px;">
+                    <div class="section-title">
+                        📋 Dettaglio Opportunità per Quarter
+                    </div>
+                    
+                    <!-- Search Box -->
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="searchQuarter" placeholder="🔍 Cerca per cliente, titolo, stage..." 
+                               oninput="filterQuarterTable()" 
+                               style="width: 100%; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                    </div>
+                    
+                    <div class="pipeline-table-container">
+                        <table class="pipeline-table">
+                            <thead>
+                                <tr>
+                                    <th onclick="sortQuarterTable('customer')" style="cursor: pointer;">
+                                        Cliente <span class="sort-indicator" data-column="customer"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('title')" style="cursor: pointer;">
+                                        Titolo <span class="sort-indicator" data-column="title"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('stage')" style="cursor: pointer;">
+                                        Stage <span class="sort-indicator" data-column="stage"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('q1')" style="cursor: pointer;">
+                                        Q1 2026 <span class="sort-indicator" data-column="q1"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('q2')" style="cursor: pointer;">
+                                        Q2 2026 <span class="sort-indicator" data-column="q2"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('q3')" style="cursor: pointer;">
+                                        Q3 2026 <span class="sort-indicator" data-column="q3"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('q4')" style="cursor: pointer;">
+                                        Q4 2026 <span class="sort-indicator" data-column="q4"></span>
+                                    </th>
+                                    <th onclick="sortQuarterTable('total')" style="cursor: pointer;">
+                                        Totale <span class="sort-indicator" data-column="total"></span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="quarterTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--mida-gray);">
+                                        Importa i dati dalla Pipeline Update per visualizzare la distribuzione quarter
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Performance Divisioni -->
+            <div id="tab-divisions" class="tab-content">
+                <div class="funnel-section">
+                    <div class="section-title">
+                        📈 Performance per Business Line
+                    </div>
+                    
+                    <div class="division-grid" id="divisionGrid">
+                        <!-- Division cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stage configurations
+        const STAGE_CONFIG = {
+            v0: { color: '#9b8db3', probability: 10, label: 'V0 - Possibile Opportunità' },
+            v1: { color: '#6b5b95', probability: 25, label: 'V1 - In Preparazione' },
+            v2: { color: '#bc6c8e', probability: 50, label: 'V2 - Proposta Inviata' },
+            v3: { color: '#dd8577', probability: 75, label: 'V3 - Attesa Firma' },
+            won: { color: '#ee9955', probability: 100, label: 'WON - Firmato' }
+        };
+
+        // Global data storage
+        let consolidatedData = [];
+        let benchmarkData = null;
+        let currentFilters = {
+            am: 'all',
+            division: 'all',
+            period: '2026'
+        };
+        let quarterViewFilter = 'total'; // total, weighted
+        let quarterStageFilter = 'all'; // all, v0, v1, v2, v3, won
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            updateDashboard();
+        });
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.closest('.tab-btn').classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // Show/hide filter groups based on tab
+            const divisionFilterGroup = document.getElementById('divisionFilterGroup');
+            const periodFilterGroup = document.getElementById('periodFilterGroup');
+            
+            if (tabName === 'funnel') {
+                // Executive Funnel: mostra entrambi i filtri
+                divisionFilterGroup.style.display = 'block';
+                periodFilterGroup.style.display = 'block';
+            } else if (tabName === 'quarters' || tabName === 'divisions') {
+                // Quarter Analysis e Performance Divisioni: nascondi entrambi
+                divisionFilterGroup.style.display = 'none';
+                periodFilterGroup.style.display = 'none';
+            }
+        }
+
+        // Import dashboard data from JSON files
+        function importDashboardData() {
+            const file = document.getElementById('importFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    console.log('Imported data:', data);
+                    
+                    // Validate data structure
+                    if (!data.accountManager || !data.byStage) {
+                        throw new Error('File JSON non valido: mancano campi obbligatori (accountManager, byStage)');
+                    }
+                    
+                    // Add to consolidated data
+                    const existingIndex = consolidatedData.findIndex(d => d.accountManager === data.accountManager);
+                    if (existingIndex >= 0) {
+                        consolidatedData[existingIndex] = data;
+                    } else {
+                        consolidatedData.push(data);
+                    }
+                    
+                    console.log('Consolidated data:', consolidatedData);
+                    
+                    // Save to localStorage
+                    saveToLocalStorage();
+                    
+                    // Update AM filter
+                    updateAMFilter();
+                    
+                    // Update dashboard
+                    updateDashboard();
+                    
+                    // Show success message
+                    const status = document.getElementById('importStatus');
+                    const statusText = document.getElementById('importStatusText');
+                    const amName = formatAMName(data.accountManager);
+                    const importDate = new Date(data.generatedAt).toLocaleDateString('it-IT', {
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    statusText.textContent = `Dati importati per ${amName} • ${importDate} • ${data.summary.totalDeals} opportunità`;
+                    status.classList.add('active');
+                    
+                    setTimeout(() => status.classList.remove('active'), 5000);
+                    
+                } catch (error) {
+                    alert('❌ Errore nell\'importazione del file:\n\n' + error.message + '\n\nVerifica che sia un file JSON valido generato da MIDA Pipeline Update.');
+                    console.error('Import error:', error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Import from localStorage (TUTTI gli AM che hanno salvato dati)
+        function importFromLocalStorage() {
+            const STAGE_CONFIG = {
+                v0: { color: '#9b8db3', probability: 10, label: 'V0 - Possibile Opportunità' },
+                v1: { color: '#6b5b95', probability: 25, label: 'V1 - In Preparazione' },
+                v2: { color: '#bc6c8e', probability: 50, label: 'V2 - Proposta Inviata' },
+                v3: { color: '#dd8577', probability: 75, label: 'V3 - Attesa Firma' },
+                won: { color: '#ee9955', probability: 100, label: 'WON - Firmato' }
+            };
+
+            const amList = [
+                'alessia_mistretta', 'caterina_sonato', 'elisa_rando', 'enrico_gambi',
+                'federico_bechini', 'fulvia_amico', 'giancarlo_novara', 'giulia_bussi',
+                'laura_pieralisi', 'marco_poggi', 'marta_coser', 'michela_guardino',
+                'pierpaolo_griva', 'rudra_chakraborty', 'silvio_trombetta', 'susanna_gansin'
+            ];
+
+            let importedCount = 0;
+            consolidatedData = []; // Reset
+
+            amList.forEach(amId => {
+                const storageKey = `midaDeals_${amId}`;
+                const saved = localStorage.getItem(storageKey);
+                
+                if (saved) {
+                    try {
+                        const amDeals = JSON.parse(saved);
+                        
+                        if (amDeals && amDeals.length > 0) {
+                            // Helper functions
+                            const simplifyDeal = (deal) => ({
+                                customer: deal.customer,
+                                title: deal.title,
+                                division: deal.division,
+                                stage: deal.stage,
+                                value: deal.value,
+                                valueQ1: deal.valueQ1 || 0,
+                                valueQ2: deal.valueQ2 || 0,
+                                valueQ3: deal.valueQ3 || 0,
+                                valueQ4: deal.valueQ4 || 0,
+                                estimatedDate: deal.estimatedDate,
+                                owner: deal.owner
+                            });
+
+                            const calculateQuarterData = (deals, quarterField) => {
+                                const total = deals.reduce((sum, d) => sum + (d[quarterField] || 0), 0);
+                                const weighted = deals.reduce((sum, d) => {
+                                    const val = d[quarterField] || 0;
+                                    const prob = STAGE_CONFIG[d.stage].probability / 100;
+                                    return sum + (val * prob);
+                                }, 0);
+                                const dealsInQuarter = deals.filter(d => (d[quarterField] || 0) > 0);
+                                return {
+                                    total: total,
+                                    weighted: Math.round(weighted),
+                                    count: dealsInQuarter.length,
+                                    deals: dealsInQuarter.map(simplifyDeal)
+                                };
+                            };
+
+                            const groupByDivision = (deals) => {
+                                const groups = {};
+                                deals.forEach(deal => {
+                                    if (!groups[deal.division]) {
+                                        groups[deal.division] = { count: 0, value: 0, deals: [] };
+                                    }
+                                    groups[deal.division].count++;
+                                    groups[deal.division].value += deal.value;
+                                    groups[deal.division].deals.push(simplifyDeal(deal));
+                                });
+                                return groups;
+                            };
+
+                            // Generate dashboard data
+                            const dashboardData = {
+                                accountManager: amId,
+                                generatedAt: localStorage.getItem(`midaLastUpdated_${amId}`) || new Date().toISOString(),
+                                summary: {
+                                    totalPipeline: amDeals.reduce((sum, d) => sum + d.value, 0),
+                                    totalDeals: amDeals.length,
+                                    weightedPipeline: amDeals.reduce((sum, d) => sum + (d.value * STAGE_CONFIG[d.stage].probability / 100), 0),
+                                    wonValue: amDeals.filter(d => d.stage === 'won').reduce((sum, d) => sum + d.value, 0)
+                                },
+                                byStage: {
+                                    v0: amDeals.filter(d => d.stage === 'v0').map(simplifyDeal),
+                                    v1: amDeals.filter(d => d.stage === 'v1').map(simplifyDeal),
+                                    v2: amDeals.filter(d => d.stage === 'v2').map(simplifyDeal),
+                                    v3: amDeals.filter(d => d.stage === 'v3').map(simplifyDeal),
+                                    won: amDeals.filter(d => d.stage === 'won').map(simplifyDeal)
+                                },
+                                byQuarter: {
+                                    Q1: calculateQuarterData(amDeals, 'valueQ1'),
+                                    Q2: calculateQuarterData(amDeals, 'valueQ2'),
+                                    Q3: calculateQuarterData(amDeals, 'valueQ3'),
+                                    Q4: calculateQuarterData(amDeals, 'valueQ4')
+                                },
+                                byDivision: groupByDivision(amDeals)
+                            };
+
+                            consolidatedData.push(dashboardData);
+                            importedCount++;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading data for ${amId}:`, error);
+                    }
+                }
+            });
+
+            if (importedCount > 0) {
+                // Save consolidated data
+                saveToLocalStorage();
+                
+                // Update UI
+                updateAMFilter();
+                updateDashboard();
+                
+                // Show success message
+                const status = document.getElementById('importStatus');
+                const statusText = document.getElementById('importStatusText');
+                statusText.textContent = `✅ Importati dati da ${importedCount} Account Manager dal browser • ${new Date().toLocaleString('it-IT')}`;
+                status.classList.add('active');
+                
+                setTimeout(() => status.classList.remove('active'), 7000);
+            } else {
+                alert('⚠️ Nessun dato trovato nel browser.\n\nGli Account Manager devono prima salvare le loro pipeline usando MIDA Pipeline Update.');
+            }
+        }
+
+        // Update AM filter dropdown
+        function updateAMFilter() {
+            const amFilter = document.getElementById('amFilter');
+            const currentValue = amFilter.value;
+            
+            // Get unique AMs
+            const ams = [...new Set(consolidatedData.map(d => d.accountManager))].sort();
+            
+            // Rebuild options
+            amFilter.innerHTML = '<option value="all">Tutti gli AM (' + consolidatedData.length + ')</option>';
+            ams.forEach(am => {
+                const option = document.createElement('option');
+                option.value = am;
+                option.textContent = formatAMName(am);
+                amFilter.appendChild(option);
+            });
+            
+            // Restore selection
+            if (currentValue && ams.includes(currentValue)) {
+                amFilter.value = currentValue;
+            }
+        }
+
+        // Format AM name
+        function formatAMName(amId) {
+            const names = {
+                'alessia_mistretta': 'Alessia Mistretta',
+                'caterina_sonato': 'Caterina Sonato',
+                'elisa_rando': 'Elisa Rando',
+                'enrico_gambi': 'Enrico Gambi',
+                'federico_bechini': 'Federico Bechini',
+                'fulvia_amico': 'Fulvia Amico Di Meane',
+                'giancarlo_novara': 'Giancarlo Novara',
+                'giulia_bussi': 'Giulia Bussi',
+                'laura_pieralisi': 'Laura Pieralisi',
+                'marco_poggi': 'Marco Poggi',
+                'marta_coser': 'Marta Coser',
+                'michela_guardino': 'Michela Guardino',
+                'pierpaolo_griva': 'Pierpaolo Peretti Griva',
+                'rudra_chakraborty': 'Rudra Chakraborty',
+                'silvio_trombetta': 'Silvio Trombetta',
+                'susanna_gansin': 'Susanna Enrico Gansin'
+            };
+            return names[amId] || amId;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            currentFilters.am = document.getElementById('amFilter').value;
+            currentFilters.division = document.getElementById('divisionFilter').value;
+            currentFilters.period = document.getElementById('periodFilter').value;
+            
+            updateDashboard();
+        }
+
+        // Set quarter view filter
+        function setQuarterViewFilter(filter) {
+            quarterViewFilter = filter;
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'white';
+                btn.style.color = 'var(--mida-navy)';
+                btn.style.borderColor = 'var(--mida-border)';
+            });
+            event.target.classList.add('active');
+            event.target.style.background = 'var(--mida-purple)';
+            event.target.style.color = 'white';
+            event.target.style.borderColor = 'var(--mida-purple)';
+            
+            updateQuarterAnalysis(getAllDeals());
+        }
+
+        // Set quarter stage filter
+        function setQuarterStageFilter(stage) {
+            quarterStageFilter = stage;
+            document.querySelectorAll('.stage-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'white';
+                btn.style.color = 'var(--mida-navy)';
+                btn.style.borderColor = 'var(--mida-border)';
+            });
+            event.target.classList.add('active');
+            
+            if (stage === 'all') {
+                event.target.style.background = 'var(--mida-purple)';
+                event.target.style.color = 'white';
+                event.target.style.borderColor = 'var(--mida-purple)';
+            } else {
+                const stageColors = {
+                    'v0': '#9b8db3',
+                    'v1': '#6b5b95',
+                    'v2': '#bc6c8e',
+                    'v3': '#dd8577',
+                    'won': '#ee9955'
+                };
+                event.target.style.background = stageColors[stage];
+                event.target.style.color = 'white';
+                event.target.style.borderColor = stageColors[stage];
+            }
+            
+            // Show/hide filter info
+            const filterInfo = document.getElementById('quarterStageFilterInfo');
+            const filterText = document.getElementById('quarterStageFilterText');
+            
+            if (stage === 'all') {
+                filterInfo.style.display = 'none';
+            } else {
+                filterInfo.style.display = 'block';
+                filterText.textContent = `Visualizzando solo opportunità in stage ${STAGE_CONFIG[stage].label}`;
+            }
+            
+            updateQuarterAnalysis(getAllDeals());
+        }
+
+        // Get filtered data
+        function getFilteredData() {
+            let data = consolidatedData;
+            
+            // Filter by AM
+            if (currentFilters.am !== 'all') {
+                data = data.filter(d => d.accountManager === currentFilters.am);
+            }
+            
+            return data;
+        }
+
+        // Get all deals from filtered data
+        function getAllDeals() {
+            const filteredData = getFilteredData();
+            let allDeals = [];
+            
+            filteredData.forEach(amData => {
+                // Combine all stage deals
+                Object.keys(amData.byStage).forEach(stage => {
+                    amData.byStage[stage].forEach(deal => {
+                        // GENERA ID se manca usando customer+title+owner come chiave unica
+                        const dealId = deal.id || generateDealId(deal.customer, deal.title, amData.accountManager);
+                        
+                        allDeals.push({
+                            ...deal,
+                            id: dealId,  // ← AGGIUNTO ID!
+                            stage: stage,
+                            owner: amData.accountManager
+                        });
+                    });
+                });
+            });
+            
+            // Apply division filter
+            if (currentFilters.division !== 'all') {
+                allDeals = allDeals.filter(d => d.division === currentFilters.division);
+            }
+            
+            // Apply period filter
+            if (currentFilters.period !== '2026') {
+                const quarterMap = {
+                    'q1': 'valueQ1',
+                    'q2': 'valueQ2',
+                    'q3': 'valueQ3',
+                    'q4': 'valueQ4'
+                };
+                
+                const quarterField = quarterMap[currentFilters.period];
+                if (quarterField) {
+                    // Filter deals that have value in the selected quarter
+                    allDeals = allDeals.filter(d => (d[quarterField] || 0) > 0);
+                    
+                    // Adjust deal values to show only quarter value
+                    allDeals = allDeals.map(d => ({
+                        ...d,
+                        value: d[quarterField] || 0
+                    }));
+                }
+            }
+            
+            return allDeals;
+        }
+        
+        // Helper per generare ID univoco da customer+title+owner
+        function generateDealId(customer, title, owner) {
+            const base = `${customer}_${title}_${owner}`.toLowerCase()
+                .replace(/[^a-z0-9]/g, '_')  // Sostituisci caratteri speciali con _
+                .replace(/_+/g, '_')         // Riduci _ multipli
+                .substring(0, 50);           // Limita lunghezza
+            
+            // Aggiungi hash per unicità
+            let hash = 0;
+            const str = `${customer}${title}${owner}`;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            
+            return `deal_${base}_${Math.abs(hash)}`;
+        }
+
+        // Update dashboard
+        function updateDashboard() {
+            const deals = getAllDeals();
+            
+            // Update KPIs
+            updateKPIs(deals);
+            
+            // Update funnel
+            updateFunnel(deals);
+            
+            // Update pipeline table
+            updatePipelineTable(deals);
+            
+            // Update quarter analysis
+            updateQuarterAnalysis(deals);
+            
+            // Update divisions
+            updateDivisions(deals);
+        }
+
+        // Update KPIs
+        function updateKPIs(deals) {
+            const totalPipeline = deals.reduce((sum, d) => sum + d.value, 0);
+            const weightedPipeline = deals.reduce((sum, d) => {
+                return sum + (d.value * STAGE_CONFIG[d.stage].probability / 100);
+            }, 0);
+            const pipeline2026 = deals.reduce((sum, d) => {
+                return sum + (d.valueQ1 || 0) + (d.valueQ2 || 0) + (d.valueQ3 || 0) + (d.valueQ4 || 0);
+            }, 0);
+            const wonDeals = deals.filter(d => d.stage === 'won');
+            const totalWon = wonDeals.reduce((sum, d) => sum + d.value, 0);
+            
+            // Update values
+            document.getElementById('totalPipeline').textContent = `€ ${totalPipeline.toLocaleString('it-IT')}`;
+            document.getElementById('totalDealsCount').textContent = `${deals.length} opportunità`;
+            document.getElementById('weightedPipeline').textContent = `€ ${Math.round(weightedPipeline).toLocaleString('it-IT')}`;
+            
+            // Pipeline 2026 con benchmark
+            let pipeline2026HTML = `€ ${Math.round(pipeline2026).toLocaleString('it-IT')}`;
+            if (benchmarkData && benchmarkData.pipeline) {
+                const percentage = Math.round((pipeline2026 / benchmarkData.pipeline) * 100);
+                pipeline2026HTML += `<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Target: € ${benchmarkData.pipeline.toLocaleString('it-IT')} (${percentage}%)</div>`;
+            }
+            document.getElementById('pipeline2026').innerHTML = pipeline2026HTML;
+            
+            // WON YTD con benchmark
+            let totalWonHTML = `€ ${totalWon.toLocaleString('it-IT')}`;
+            if (benchmarkData && benchmarkData.won) {
+                const percentage = Math.round((totalWon / benchmarkData.won) * 100);
+                totalWonHTML += `<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Target: € ${benchmarkData.won.toLocaleString('it-IT')} (${percentage}%)</div>`;
+            }
+            document.getElementById('totalWon').innerHTML = totalWonHTML;
+            
+            document.getElementById('wonDealsCount').textContent = `${wonDeals.length} deal`;
+        }
+
+        // Update funnel
+        // Calcola colore in base a percentuale completamento
+        function getProgressColor(percentage) {
+            if (percentage >= 100) return '#22c55e'; // Verde
+            if (percentage >= 75) return '#eab308';  // Giallo
+            return '#ef4444'; // Rosso
+        }
+
+        function updateFunnel(deals) {
+            const funnelContainer = document.getElementById('funnelContainer');
+            funnelContainer.innerHTML = '';
+            
+            const stages = ['v0', 'v1', 'v2', 'v3', 'won'];
+            const benchmarkMap = {
+                'v0': 'v0',
+                'v1': 'v1',
+                'v2': 'v2',
+                'v3': 'v3',
+                'won': 'wonStage'
+            };
+            
+            stages.forEach(stage => {
+                const stageDeals = deals.filter(d => d.stage === stage);
+                const stageValue = stageDeals.reduce((sum, d) => sum + d.value, 0);
+                const stageCount = stageDeals.length;
+                
+                const stageElement = document.createElement('div');
+                stageElement.className = 'funnel-stage';
+                stageElement.setAttribute('data-stage', stage);
+                stageElement.style.setProperty('--stage-color', STAGE_CONFIG[stage].color);
+                
+                // Colorazione progressiva e badge
+                let progressBadge = '';
+                let benchmarkHTML = '';
+                
+                if (benchmarkData && benchmarkData[benchmarkMap[stage]] && benchmarkData[benchmarkMap[stage]] > 0) {
+                    const target = benchmarkData[benchmarkMap[stage]];
+                    const percentage = Math.round((stageValue / target) * 100);
+                    const progressColor = getProgressColor(percentage);
+                    
+                    // Bordo colorato
+                    stageElement.style.borderLeft = `6px solid ${progressColor}`;
+                    
+                    // Badge percentuale in basso a sinistra
+                    progressBadge = `
+                        <div style="
+                            position: absolute;
+                            bottom: 12px;
+                            left: 12px;
+                            background: ${progressColor};
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 700;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                        ">
+                            ${percentage}%
+                        </div>
+                    `;
+                    
+                    // Benchmark info
+                    benchmarkHTML = `<span class="funnel-benchmark" style="font-size: 13px; background: rgba(0,0,0,0.5); color: white; padding: 6px 14px; border-radius: 20px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.2);">🎯 Target: € ${target.toLocaleString('it-IT')} <strong>(${percentage}%)</strong></span>`;
+                }
+                
+                stageElement.innerHTML = `
+                    ${progressBadge}
+                    <div class="funnel-stage-header">
+                        <div class="funnel-stage-label">${STAGE_CONFIG[stage].label}</div>
+                        <div class="funnel-stage-metrics">
+                            <span class="funnel-value">€ ${stageValue.toLocaleString('it-IT')}</span>
+                            <span class="funnel-count">${stageCount} deal</span>
+                            <span class="funnel-probability">P% ${STAGE_CONFIG[stage].probability}</span>
+                        </div>
+                    </div>
+                    ${benchmarkHTML ? `<div style="margin-top: 8px;">${benchmarkHTML}</div>` : ''}
+                `;
+                
+                funnelContainer.appendChild(stageElement);
+            });
+        }
+
+        // Update pipeline table
+        // Filter pipeline table
+        function filterPipelineTable() {
+            const searchTerm = document.getElementById('searchPipeline').value.toLowerCase().trim();
+            const tbody = document.getElementById('pipelineTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            let visibleCount = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                
+                // Skip empty state row
+                if (row.cells.length === 1) continue;
+                
+                // Get text from all cells
+                const customer = row.cells[0]?.textContent.toLowerCase() || '';
+                const division = row.cells[1]?.textContent.toLowerCase() || '';
+                const value = row.cells[2]?.textContent.toLowerCase() || '';
+                const stage = row.cells[3]?.textContent.toLowerCase() || '';
+                const date = row.cells[5]?.textContent.toLowerCase() || '';
+                const owner = row.cells[6]?.textContent.toLowerCase() || '';
+                
+                const allText = customer + ' ' + division + ' ' + value + ' ' + stage + ' ' + date + ' ' + owner;
+                
+                if (allText.includes(searchTerm)) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            }
+            
+            // Show "no results" message if needed
+            if (visibleCount === 0 && searchTerm !== '') {
+                if (!tbody.querySelector('.no-results')) {
+                    const noResults = document.createElement('tr');
+                    noResults.className = 'no-results';
+                    noResults.innerHTML = '<td colspan="7" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessun risultato trovato per "' + searchTerm + '"</td>';
+                    tbody.appendChild(noResults);
+                }
+            } else {
+                const noResults = tbody.querySelector('.no-results');
+                if (noResults) noResults.remove();
+            }
+        }
+
+        // Filter quarter table
+        function filterQuarterTable() {
+            const searchTerm = document.getElementById('searchQuarter').value.toLowerCase().trim();
+            const tbody = document.getElementById('quarterTableBody');
+            const rows = tbody.getElementsByTagName('tr');
+            
+            let visibleCount = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                
+                // Skip empty state row
+                if (row.cells.length === 1) continue;
+                
+                // Get text from first 3 columns (Cliente, Titolo, Stage)
+                const customer = row.cells[0]?.textContent.toLowerCase() || '';
+                const title = row.cells[1]?.textContent.toLowerCase() || '';
+                const stage = row.cells[2]?.textContent.toLowerCase() || '';
+                
+                const allText = customer + ' ' + title + ' ' + stage;
+                
+                if (allText.includes(searchTerm)) {
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    row.classList.add('hidden');
+                }
+            }
+            
+            // Show "no results" message if needed
+            if (visibleCount === 0 && searchTerm !== '') {
+                if (!tbody.querySelector('.no-results')) {
+                    const noResults = document.createElement('tr');
+                    noResults.className = 'no-results';
+                    noResults.innerHTML = '<td colspan="8" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessun risultato trovato per "' + searchTerm + '"</td>';
+                    tbody.appendChild(noResults);
+                }
+            } else {
+                const noResults = tbody.querySelector('.no-results');
+                if (noResults) noResults.remove();
+            }
+        }
+
+        function updatePipelineTable(deals) {
+            window.pipelineDeals = deals; // Salva per sorting e export
+            window.allOpportunities = deals; // ← AGGIUNTO: Salva anche qui per modal!
+            renderPipelineTable();
+        }
+        
+        function renderPipelineTable() {
+            const deals = window.pipelineDeals || [];
+            const tbody = document.getElementById('pipelineTableBody');
+            tbody.innerHTML = '';
+            
+            if (deals.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità trovata con i filtri selezionati</td></tr>';
+                return;
+            }
+            
+            // Copia array per non modificare originale
+            let sortedDeals = [...deals];
+            
+            // Applica sorting se attivo
+            if (pipelineSortColumn) {
+                sortedDeals.sort((a, b) => {
+                    let valA, valB;
+                    
+                    switch(pipelineSortColumn) {
+                        case 'customer':
+                            valA = a.customer.toLowerCase();
+                            valB = b.customer.toLowerCase();
+                            return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        
+                        case 'division':
+                            valA = a.division.toLowerCase();
+                            valB = b.division.toLowerCase();
+                            return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        
+                        case 'value':
+                            return pipelineSortDirection === 'asc' ? a.value - b.value : b.value - a.value;
+                        
+                        case 'stage':
+                            const stageOrder = { 'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3, 'won': 4 };
+                            return pipelineSortDirection === 'asc' ? 
+                                stageOrder[a.stage] - stageOrder[b.stage] : 
+                                stageOrder[b.stage] - stageOrder[a.stage];
+                        
+                        case 'probability':
+                            const probA = STAGE_CONFIG[a.stage].probability;
+                            const probB = STAGE_CONFIG[b.stage].probability;
+                            return pipelineSortDirection === 'asc' ? probA - probB : probB - probA;
+                        
+                        case 'date':
+                            valA = a.estimatedDate ? new Date(a.estimatedDate).getTime() : 0;
+                            valB = b.estimatedDate ? new Date(b.estimatedDate).getTime() : 0;
+                            return pipelineSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        case 'owner':
+                            valA = a.owner.toLowerCase();
+                            valB = b.owner.toLowerCase();
+                            return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        
+                        default:
+                            return 0;
+                    }
+                });
+            } else {
+                // Default: sort by value descending
+                sortedDeals.sort((a, b) => b.value - a.value);
+            }
+            
+            // Top 20
+            const topDeals = sortedDeals.slice(0, 20);
+            
+            topDeals.forEach(deal => {
+                const estimatedDate = deal.estimatedDate ? new Date(deal.estimatedDate).toLocaleDateString('it-IT') : 'Non definita';
+                const prob = STAGE_CONFIG[deal.stage].probability;
+                
+                // Co-owners badge
+                let coOwnersBadge = '';
+                if (deal.coOwners && deal.coOwners.length > 0) {
+                    const initials = deal.coOwners.map(co => getAMInitials(co.name)).join(', ');
+                    coOwnersBadge = `<div style="margin-top: 4px;"><span style="padding: 3px 8px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); color: #7b1fa2; border-radius: 10px; font-size: 11px; font-weight: 600;">🤝 ${initials}</span></div>`;
+                }
+                
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => showDealDetail(deal.id);
+                row.innerHTML = `
+                    <td>
+                        <div class="deal-customer">${deal.customer}</div>
+                        <div class="deal-title">${deal.title}</div>
+                    </td>
+                    <td>${deal.division}</td>
+                    <td><strong>€ ${deal.value.toLocaleString('it-IT')}</strong></td>
+                    <td><span class="status-badge status-${deal.stage}">${STAGE_CONFIG[deal.stage].label}</span></td>
+                    <td>
+                        <div class="probability-indicator">
+                            <div class="probability-bar">
+                                <div class="probability-fill" style="width: ${prob}%;"></div>
+                            </div>
+                            <div class="probability-text">${prob}%</div>
+                        </div>
+                    </td>
+                    <td>${estimatedDate}</td>
+                    <td>
+                        ${formatAMName(deal.owner)}
+                        ${coOwnersBadge}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function getAMInitials(amName) {
+            const names = {
+                'alessia_mistretta': 'AM',
+                'caterina_sonato': 'CS',
+                'giancarlo_novara': 'GN',
+                'giulia_bussi': 'GB',
+                'marco_poggi': 'MP',
+                'rossella_bianchi': 'RB'
+            };
+            return names[amName] || amName.substring(0, 2).toUpperCase();
+        }
+
+        // Update quarter analysis
+        function updateQuarterAnalysis(deals) {
+            // Apply stage filter
+            let filteredDeals = deals;
+            if (quarterStageFilter !== 'all') {
+                filteredDeals = deals.filter(d => d.stage === quarterStageFilter);
+            }
+            
+            const quarters = {
+                Q1: { total: 0, count: 0 },
+                Q2: { total: 0, count: 0 },
+                Q3: { total: 0, count: 0 },
+                Q4: { total: 0, count: 0 }
+            };
+            
+            filteredDeals.forEach(deal => {
+                const prob = quarterViewFilter === 'weighted' ? STAGE_CONFIG[deal.stage].probability / 100 : 1;
+                
+                if (deal.valueQ1 > 0) {
+                    quarters.Q1.total += deal.valueQ1 * prob;
+                    quarters.Q1.count++;
+                }
+                if (deal.valueQ2 > 0) {
+                    quarters.Q2.total += deal.valueQ2 * prob;
+                    quarters.Q2.count++;
+                }
+                if (deal.valueQ3 > 0) {
+                    quarters.Q3.total += deal.valueQ3 * prob;
+                    quarters.Q3.count++;
+                }
+                if (deal.valueQ4 > 0) {
+                    quarters.Q4.total += deal.valueQ4 * prob;
+                    quarters.Q4.count++;
+                }
+            });
+            
+            ['Q1', 'Q2', 'Q3', 'Q4'].forEach(q => {
+                const qNum = q.toLowerCase();
+                document.getElementById(`${qNum}-total`).textContent = `€ ${Math.round(quarters[q].total).toLocaleString('it-IT')}`;
+                document.getElementById(`${qNum}-deals`).textContent = `${quarters[q].count} opportunità`;
+            });
+            
+            // Update quarter table with filtered deals
+            updateQuarterTable(filteredDeals);
+        }
+
+        // Update quarter table
+        function renderQuarterTable() {
+            const tbody = document.getElementById('quarterTableBody');
+            tbody.innerHTML = '';
+            
+            const dealsWithQuarters = allOpportunities.filter(d => 
+                (d.valueQ1 || 0) + (d.valueQ2 || 0) + (d.valueQ3 || 0) + (d.valueQ4 || 0) > 0
+            );
+            
+            if (dealsWithQuarters.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità con distribuzione quarter</td></tr>';
+                return;
+            }
+            
+            // Copia e sort
+            let sortedDeals = [...dealsWithQuarters];
+            
+            if (quarterSortColumn) {
+                sortedDeals.sort((a, b) => {
+                    const prob = quarterViewFilter === 'weighted' ? STAGE_CONFIG[a.stage].probability / 100 : 1;
+                    const probB = quarterViewFilter === 'weighted' ? STAGE_CONFIG[b.stage].probability / 100 : 1;
+                    
+                    let valA, valB;
+                    
+                    switch(quarterSortColumn) {
+                        case 'customer':
+                            return quarterSortDirection === 'asc' ? 
+                                a.customer.localeCompare(b.customer) : 
+                                b.customer.localeCompare(a.customer);
+                        
+                        case 'title':
+                            return quarterSortDirection === 'asc' ? 
+                                a.title.localeCompare(b.title) : 
+                                b.title.localeCompare(a.title);
+                        
+                        case 'stage':
+                            const stageOrder = { 'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3, 'won': 4 };
+                            return quarterSortDirection === 'asc' ? 
+                                stageOrder[a.stage] - stageOrder[b.stage] : 
+                                stageOrder[b.stage] - stageOrder[a.stage];
+                        
+                        case 'q1':
+                            valA = (a.valueQ1 || 0) * prob;
+                            valB = (b.valueQ1 || 0) * probB;
+                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        case 'q2':
+                            valA = (a.valueQ2 || 0) * prob;
+                            valB = (b.valueQ2 || 0) * probB;
+                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        case 'q3':
+                            valA = (a.valueQ3 || 0) * prob;
+                            valB = (b.valueQ3 || 0) * probB;
+                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        case 'q4':
+                            valA = (a.valueQ4 || 0) * prob;
+                            valB = (b.valueQ4 || 0) * probB;
+                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        case 'total':
+                            valA = ((a.valueQ1 || 0) + (a.valueQ2 || 0) + (a.valueQ3 || 0) + (a.valueQ4 || 0)) * prob;
+                            valB = ((b.valueQ1 || 0) + (b.valueQ2 || 0) + (b.valueQ3 || 0) + (b.valueQ4 || 0)) * probB;
+                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
+                        
+                        default:
+                            return 0;
+                    }
+                });
+            }
+            
+            sortedDeals.forEach(deal => {
+                const prob = quarterViewFilter === 'weighted' ? STAGE_CONFIG[deal.stage].probability / 100 : 1;
+                
+                const q1Val = (deal.valueQ1 || 0) * prob;
+                const q2Val = (deal.valueQ2 || 0) * prob;
+                const q3Val = (deal.valueQ3 || 0) * prob;
+                const q4Val = (deal.valueQ4 || 0) * prob;
+                const total = q1Val + q2Val + q3Val + q4Val;
+                
+                const q1Display = q1Val > 0 ? '€ ' + Math.round(q1Val).toLocaleString('it-IT') : '-';
+                const q2Display = q2Val > 0 ? '€ ' + Math.round(q2Val).toLocaleString('it-IT') : '-';
+                const q3Display = q3Val > 0 ? '€ ' + Math.round(q3Val).toLocaleString('it-IT') : '-';
+                const q4Display = q4Val > 0 ? '€ ' + Math.round(q4Val).toLocaleString('it-IT') : '-';
+                const totalDisplay = '€ ' + Math.round(total).toLocaleString('it-IT');
+                
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => showDealDetail(deal.id);
+                row.innerHTML = `
+                    <td><strong>${deal.customer}</strong></td>
+                    <td>${deal.title}</td>
+                    <td><span class="status-badge status-${deal.stage}">${STAGE_CONFIG[deal.stage].label}</span></td>
+                    <td style="font-weight: 600;">${q1Display}</td>
+                    <td style="font-weight: 600;">${q2Display}</td>
+                    <td style="font-weight: 600;">${q3Display}</td>
+                    <td style="font-weight: 600;">${q4Display}</td>
+                    <td style="font-weight: 700; color: var(--mida-orange);">${totalDisplay}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateQuarterTable(deals) {
+            window.allOpportunities = deals; // Salva per sorting
+            renderQuarterTable();
+        }
+
+        // Update divisions
+        function updateDivisions(deals) {
+            const divisionGrid = document.getElementById('divisionGrid');
+            divisionGrid.innerHTML = '';
+            
+            const divisions = [
+                'People Development', 'HR Advisory', 'Change & Adoption', 
+                'Sales Boost', 'Innovation', 'Digital Products', 'Communication'
+            ];
+            
+            const divisionData = {};
+            divisions.forEach(div => {
+                const divDeals = deals.filter(d => d.division === div);
+                divisionData[div] = {
+                    count: divDeals.length,
+                    value: divDeals.reduce((sum, d) => sum + d.value, 0),
+                    wonCount: divDeals.filter(d => d.stage === 'won').length,
+                    avgDeal: divDeals.length > 0 ? divDeals.reduce((sum, d) => sum + d.value, 0) / divDeals.length : 0
+                };
+            });
+            
+            // Sort by value
+            const sortedDivisions = divisions.sort((a, b) => divisionData[b].value - divisionData[a].value);
+            
+            // Palette MIDA per Business Unit (colori chiari e leggibili)
+            const buColors = {
+                'People Development': { bg: 'rgba(107, 91, 149, 0.15)', color: '#2d2654', border: '#6b5b95' },      // Purple chiaro
+                'HR Advisory': { bg: 'rgba(188, 108, 142, 0.15)', color: '#2d2654', border: '#bc6c8e' },             // Pink chiaro
+                'Change & Adoption': { bg: 'rgba(221, 133, 119, 0.15)', color: '#2d2654', border: '#dd8577' },       // Coral chiaro
+                'Sales Boost': { bg: 'rgba(238, 153, 85, 0.15)', color: '#2d2654', border: '#ee9955' },              // Orange chiaro
+                'Innovation': { bg: 'rgba(155, 141, 179, 0.15)', color: '#2d2654', border: '#9b8db3' },              // Purple-light
+                'Digital Products': { bg: 'rgba(212, 165, 179, 0.15)', color: '#2d2654', border: '#d4a5b3' },        // Pink-light
+                'Communication': { bg: 'rgba(240, 181, 161, 0.15)', color: '#2d2654', border: '#f0b5a1' }            // Coral-light
+            };
+            
+            sortedDivisions.forEach((div, index) => {
+                const data = divisionData[div];
+                const buColor = buColors[div] || { bg: 'rgba(107, 91, 149, 0.15)', color: '#2d2654', border: '#6b5b95' };
+                
+                const card = document.createElement('div');
+                card.className = 'division-card';
+                card.style.background = buColor.bg;
+                card.style.borderLeft = `4px solid ${buColor.border}`;
+                card.innerHTML = `
+                    <div class="division-header">
+                        <div class="division-name" style="color: ${buColor.color};">${div}</div>
+                        <div class="division-badge" style="background: ${buColor.border}; color: white;">
+                            #${index + 1}
+                        </div>
+                    </div>
+                    <div class="division-stats">
+                        <div class="division-stat">
+                            <div class="division-stat-label" style="color: ${buColor.color};">Pipeline</div>
+                            <div class="division-stat-value" style="color: ${buColor.border};">€ ${Math.round(data.value / 1000)}K</div>
+                        </div>
+                        <div class="division-stat">
+                            <div class="division-stat-label" style="color: ${buColor.color};">Deal attivi</div>
+                            <div class="division-stat-value" style="color: ${buColor.border};">${data.count}</div>
+                        </div>
+                        <div class="division-stat">
+                            <div class="division-stat-label" style="color: ${buColor.color};">WON</div>
+                            <div class="division-stat-value" style="color: ${buColor.border};">${data.wonCount}</div>
+                        </div>
+                        <div class="division-stat">
+                            <div class="division-stat-label" style="color: ${buColor.color};">Avg Deal</div>
+                            <div class="division-stat-value" style="color: ${buColor.border};">€ ${Math.round(data.avgDeal / 1000)}K</div>
+                        </div>
+                    </div>
+                `;
+                divisionGrid.appendChild(card);
+            });
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('midaConsolidatedData', JSON.stringify(consolidatedData));
+        }
+
+        // Load from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('midaConsolidatedData');
+            if (saved) {
+                consolidatedData = JSON.parse(saved);
+                updateAMFilter();
+            }
+        }
+
+        // Clear data
+        function clearData() {
+            if (confirm('Sei sicuro di voler cancellare tutti i dati importati?')) {
+                consolidatedData = [];
+                localStorage.removeItem('midaConsolidatedData');
+                updateAMFilter();
+                updateDashboard();
+                
+                const status = document.getElementById('importStatus');
+                status.classList.remove('active');
+            }
+        }
+
+        // ============================================
+        // GOOGLE APPS SCRIPT INTEGRATION
+        // ============================================
+        
+        // IMPORTANTE: Incolla qui lo STESSO URL del Pipeline Kanban
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrROsJAuqMH9HxKUfPN1kMNKYgFMzV68sGaSeTpBj1p3DdKHWiU0BG4_iDB-HATUCQow/exec';
+
+        // Import from Google Drive (via Apps Script)
+        async function importFromGoogleDrive() {
+            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+                alert('⚠️ Configurazione mancante!\n\nDevi prima configurare Google Apps Script.\n\nSegui le istruzioni in GOOGLE_APPS_SCRIPT_SETUP.md');
+                return;
+            }
+
+            const importBtn = document.querySelector('button[onclick="importFromGoogleDrive()"]');
+            const originalText = importBtn ? importBtn.innerHTML : '';
+            if (importBtn) importBtn.innerHTML = '⏳ Caricamento...';
+
+            try {
+                // Call Apps Script to load all files
+                // IMPORTANTE: Apps Script richiede redirect per POST, quindi usiamo il metodo con callback
+                const response = await fetch(APPS_SCRIPT_URL + '?action=load', {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                console.log('Apps Script response:', result);
+
+                if (result.success && result.data) {
+                    // Clear existing data
+                    consolidatedData = [];
+
+                    // Add all AM data
+                    result.data.forEach(amData => {
+                        if (amData.accountManager && amData.byStage) {
+                            consolidatedData.push(amData);
+                        }
+                    });
+
+                    if (consolidatedData.length > 0) {
+                        // Save and update
+                        saveToLocalStorage();
+                        updateAMFilter();
+                        updateDashboard();
+
+                        const status = document.getElementById('importStatus');
+                        const statusText = document.getElementById('importStatusText');
+                        statusText.textContent = `✅ Importati ${consolidatedData.length} Account Manager da Google Drive • ${new Date().toLocaleString('it-IT')}`;
+                        status.classList.add('active');
+
+                        setTimeout(() => status.classList.remove('active'), 7000);
+                    } else {
+                        alert('⚠️ Nessun dato valido trovato.\n\nGli Account Manager devono prima salvare le loro pipeline.');
+                    }
+                } else {
+                    throw new Error(result.error || 'Risposta non valida dal server');
+                }
+
+                if (importBtn) importBtn.innerHTML = originalText;
+
+            } catch (error) {
+                if (importBtn) importBtn.innerHTML = originalText;
+                console.error('Error importing from Google Drive:', error);
+                alert(`❌ Errore durante l'importazione:\n\n${error.message}\n\nVerifica:\n1. URL Apps Script corretto\n2. Script pubblicato come Web App\n3. Permessi "Chiunque" attivi\n\nDettagli tecnici: ${error.toString()}`);
+            }
+        }
+
+        // Check if Apps Script is configured
+        function checkAppsScriptConfig() {
+            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+                const btn = document.querySelector('button[onclick="importFromGoogleDrive()"]');
+                if (btn) {
+                    btn.style.opacity = '0.5';
+                    btn.title = 'Configura prima Google Apps Script';
+                }
+            }
+        }
+
+        // Initialize check on load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            loadBenchmarkFromDrive(); // Carica benchmark automaticamente
+            updateDashboard();
+            checkAppsScriptConfig();
+        });
+
+        // ============================================
+        // BENCHMARK MANAGEMENT
+        // ============================================
+        
+        // Open benchmark modal
+        // Formatta input con separatore migliaia
+        function formatBenchmarkInput(input) {
+            // Rimuovi tutto tranne i numeri
+            let value = input.value.replace(/\D/g, '');
+            
+            // Converti in numero e formatta con punti
+            if (value) {
+                const formatted = parseInt(value).toLocaleString('it-IT');
+                input.value = formatted;
+            }
+        }
+
+        // Converte valore formattato in numero
+        function parseFormattedValue(value) {
+            if (!value) return 0;
+            // Rimuovi punti e converti in numero
+            return parseInt(value.replace(/\./g, '')) || 0;
+        }
+
+        function openBenchmarkModal() {
+            const modal = document.getElementById('benchmarkModal');
+            modal.style.display = 'flex';
+            
+            // Precompila con valori esistenti se presenti (già formattati)
+            if (benchmarkData) {
+                document.getElementById('benchmarkPipeline').value = benchmarkData.pipeline ? benchmarkData.pipeline.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkWon').value = benchmarkData.won ? benchmarkData.won.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkV0').value = benchmarkData.v0 ? benchmarkData.v0.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkV1').value = benchmarkData.v1 ? benchmarkData.v1.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkV2').value = benchmarkData.v2 ? benchmarkData.v2.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkV3').value = benchmarkData.v3 ? benchmarkData.v3.toLocaleString('it-IT') : '';
+                document.getElementById('benchmarkWonStage').value = benchmarkData.wonStage ? benchmarkData.wonStage.toLocaleString('it-IT') : '';
+            }
+        }
+
+        // Close benchmark modal
+        function closeBenchmarkModal() {
+            document.getElementById('benchmarkModal').style.display = 'none';
+        }
+
+        // Save benchmark to Google Drive
+        async function saveBenchmark(event) {
+            event.preventDefault();
+            
+            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+                alert('⚠️ Configurazione mancante!\n\nDevi prima configurare Google Apps Script.');
+                return;
+            }
+            
+            const data = {
+                pipeline: parseFormattedValue(document.getElementById('benchmarkPipeline').value),
+                won: parseFormattedValue(document.getElementById('benchmarkWon').value),
+                v0: parseFormattedValue(document.getElementById('benchmarkV0').value),
+                v1: parseFormattedValue(document.getElementById('benchmarkV1').value),
+                v2: parseFormattedValue(document.getElementById('benchmarkV2').value),
+                v3: parseFormattedValue(document.getElementById('benchmarkV3').value),
+                wonStage: parseFormattedValue(document.getElementById('benchmarkWonStage').value),
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                // Salva su Google Drive
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'save_benchmark',
+                        benchmarkData: data
+                    }),
+                    mode: 'no-cors'
+                });
+                
+                // Salva anche in locale come backup
+                benchmarkData = data;
+                localStorage.setItem('midaBenchmark', JSON.stringify(data));
+                
+                closeBenchmarkModal();
+                updateDashboard(); // Aggiorna dashboard con i nuovi benchmark
+                
+                setTimeout(() => {
+                    alert('✅ Benchmark salvati su Google Drive!\n\nI valori saranno visibili come riferimento nei KPI.');
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error saving benchmark:', error);
+                alert('⚠️ Tentativo di salvataggio inviato.\n\nSe l\'URL Apps Script è corretto, i benchmark dovrebbero essere salvati.');
+            }
+        }
+
+        // Load benchmark from Google Drive
+        async function loadBenchmarkFromDrive() {
+            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
+                // Prova a caricare da localStorage come fallback
+                const saved = localStorage.getItem('midaBenchmark');
+                if (saved) {
+                    benchmarkData = JSON.parse(saved);
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?action=load_benchmark', {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    benchmarkData = result.data;
+                    localStorage.setItem('midaBenchmark', JSON.stringify(result.data));
+                    console.log('Benchmark caricati da Google Drive:', result.data);
+                }
+            } catch (error) {
+                console.log('Benchmark non trovati su Drive, uso localStorage');
+                // Fallback to localStorage
+                const saved = localStorage.getItem('midaBenchmark');
+                if (saved) {
+                    benchmarkData = JSON.parse(saved);
+                }
+            }
+        }
+    </script>
+
+    <!-- Benchmark Modal -->
+    <div id="benchmarkModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>🎯 Configura Benchmark 2026</h3>
+                <span class="close-btn" onclick="closeBenchmarkModal()">&times;</span>
+            </div>
+            
+            <!-- Info Box Vantaggi -->
+            <div style="margin: 20px; padding: 16px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-left: 4px solid #2563eb; border-radius: 8px;">
+                <div style="font-weight: 700; color: #1e40af; margin-bottom: 8px; font-size: 15px;">
+                    💡 Perché configurare i Benchmark?
+                </div>
+                <div style="font-size: 13px; color: #1e3a8a; line-height: 1.6;">
+                    <strong>Vantaggi:</strong>
+                    <ul style="margin: 8px 0 0 20px; padding: 0;">
+                        <li><strong>Monitoraggio Obiettivi:</strong> Confronta in tempo reale la tua pipeline con i target aziendali</li>
+                        <li><strong>Indicatori Visivi:</strong> Barre di progresso colorate mostrano immediatamente se sei on-track</li>
+                        <li><strong>Alert Automatici:</strong> Ricevi segnali quando sei sotto/sopra il target per stage</li>
+                        <li><strong>Analisi Gap:</strong> Identifica rapidamente dove serve più attenzione commerciale</li>
+                        <li><strong>Pianificazione:</strong> Proietta se raggiungerai gli obiettivi annuali</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <form onsubmit="saveBenchmark(event)" style="padding: 20px;">
+                <div class="form-group">
+                    <label>Pipeline Target 2026 (€)</label>
+                    <input type="text" id="benchmarkPipeline" placeholder="Es: 1.000.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                    <label>WON Target YTD (€)</label>
+                    <input type="text" id="benchmarkWon" placeholder="Es: 500.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                
+                <div style="margin: 16px 0; padding-top: 16px; border-top: 2px solid var(--mida-border);">
+                    <div style="font-weight: 700; color: var(--mida-navy); margin-bottom: 12px;">Target per Stage</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>V0 - Possibile Opportunità (€)</label>
+                    <input type="text" id="benchmarkV0" placeholder="Es: 200.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                    <label>V1 - In Preparazione (€)</label>
+                    <input type="text" id="benchmarkV1" placeholder="Es: 300.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                    <label>V2 - Proposta Inviata (€)</label>
+                    <input type="text" id="benchmarkV2" placeholder="Es: 250.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                    <label>V3 - Attesa Firma (€)</label>
+                    <input type="text" id="benchmarkV3" placeholder="Es: 150.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="form-group">
+                    <label>WON - Firmato (€)</label>
+                    <input type="text" id="benchmarkWonStage" placeholder="Es: 100.000" oninput="formatBenchmarkInput(this)" style="width: 100%; padding: 10px; border: 2px solid var(--mida-light-gray); border-radius: 6px;">
+                </div>
+                <div class="modal-footer" style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeBenchmarkModal()">Annulla</button>
+                    <button type="submit" class="btn btn-success">💾 Salva su Google Drive</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Dettaglio Opportunità (Read-Only) -->
+    <div id="dealDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--mida-purple), #5b4b7f); color: white;">
+                <h3 id="dealDetailTitle" style="color: white; margin: 0;">📋 Dettaglio Opportunità</h3>
+                <span class="close-btn" onclick="closeDealDetailModal()" style="color: white;">&times;</span>
+            </div>
+            <div style="padding: 30px;">
+                <div class="deal-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <!-- Cliente -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Cliente</label>
+                        <div id="detailCustomer" style="font-weight: 700; color: var(--mida-navy); font-size: 17px;"></div>
+                    </div>
+                    
+                    <!-- Titolo -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Titolo</label>
+                        <div id="detailTitle" style="color: var(--mida-navy); font-size: 15px; font-weight: 600;"></div>
+                    </div>
+                    
+                    <!-- Business Unit -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Business Unit</label>
+                        <div id="detailDivision" style="color: var(--mida-navy);"></div>
+                    </div>
+                    
+                    <!-- Industry -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Industry</label>
+                        <div id="detailIndustry" style="color: var(--mida-navy);"></div>
+                    </div>
+                    
+                    <!-- Valore -->
+                    <div class="detail-field" style="background: linear-gradient(135deg, rgba(221, 133, 119, 0.08), rgba(221, 133, 119, 0.04)); padding: 14px; border-radius: 8px; border: 2px solid var(--mida-coral);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Valore Totale</label>
+                        <div id="detailValue" style="font-weight: 700; color: var(--mida-orange); font-size: 22px;"></div>
+                    </div>
+                    
+                    <!-- Stage -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Stage</label>
+                        <div id="detailStage"></div>
+                    </div>
+                    
+                    <!-- Data -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Data Stimata</label>
+                        <div id="detailDate" style="color: var(--mida-navy);"></div>
+                    </div>
+                    
+                    <!-- Owner -->
+                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Owner</label>
+                        <div id="detailOwner" style="font-weight: 600; color: var(--mida-navy);"></div>
+                    </div>
+                    
+                    <!-- Co-owners (se presenti) -->
+                    <div class="detail-field" id="detailCoOwnersField" style="grid-column: 1 / -1; display: none; background: linear-gradient(135deg, #f3e5f5, #e1bee7); padding: 14px; border-radius: 8px; border: 2px solid #7b1fa2;">
+                        <label style="font-weight: 600; color: #6a1b9a; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">🤝 Co-owners</label>
+                        <div id="detailCoOwners" style="font-weight: 600; color: #4a148c;"></div>
+                    </div>
+                </div>
+                
+                <!-- Quarter Distribution -->
+                <div style="margin-top: 28px; padding: 20px; background: rgba(37, 99, 235, 0.04); border-radius: 12px; border: 2px solid rgba(37, 99, 235, 0.2);">
+                    <label style="font-weight: 700; color: var(--mida-navy); font-size: 15px; display: block; margin-bottom: 16px;">📊 Distribuzione Quarter 2026</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                        <div style="text-align: center; background: white; padding: 12px; border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.2);">
+                            <div style="font-size: 11px; color: var(--mida-gray); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Q1 2026</div>
+                            <div id="detailQ1" style="font-weight: 700; color: var(--mida-navy); font-size: 16px;"></div>
+                        </div>
+                        <div style="text-align: center; background: white; padding: 12px; border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.2);">
+                            <div style="font-size: 11px; color: var(--mida-gray); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Q2 2026</div>
+                            <div id="detailQ2" style="font-weight: 700; color: var(--mida-navy); font-size: 16px;"></div>
+                        </div>
+                        <div style="text-align: center; background: white; padding: 12px; border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.2);">
+                            <div style="font-size: 11px; color: var(--mida-gray); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Q3 2026</div>
+                            <div id="detailQ3" style="font-weight: 700; color: var(--mida-navy); font-size: 16px;"></div>
+                        </div>
+                        <div style="text-align: center; background: white; padding: 12px; border-radius: 8px; border: 1px solid rgba(37, 99, 235, 0.2);">
+                            <div style="font-size: 11px; color: var(--mida-gray); font-weight: 700; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Q4 2026</div>
+                            <div id="detailQ4" style="font-weight: 700; color: var(--mida-navy); font-size: 16px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Description/Notes -->
+                <div id="detailDescriptionField" style="margin-top: 24px; display: none;">
+                    <label style="font-weight: 600; color: var(--mida-gray); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 10px; letter-spacing: 0.5px;">📝 Note</label>
+                    <div id="detailDescription" style="padding: 16px; background: rgba(107, 91, 149, 0.05); border-radius: 8px; border-left: 4px solid var(--mida-purple); color: var(--mida-navy); line-height: 1.7; font-size: 14px;"></div>
+                </div>
+                
+                <div style="margin-top: 24px; padding: 18px; background: rgba(221, 133, 119, 0.1); border-left: 4px solid var(--mida-coral); border-radius: 8px;">
+                    <div style="font-size: 14px; color: var(--mida-navy); line-height: 1.6;">
+                        ℹ️ <strong>Visualizzazione in sola lettura.</strong> Per modificare questa opportunità, accedi alla <strong>Pipeline</strong>.
+                    </div>
+                </div>
+                
+                <div style="margin-top: 24px; text-align: center;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDealDetailModal()" style="padding: 12px 32px; font-size: 15px;">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle mobile menu
+        function toggleMobileMenu() {
+            const dropdown = document.getElementById('mobileMenuDropdown');
+            if (dropdown) {
+                dropdown.classList.toggle('active');
+            }
+        }
+
+        // ========================================
+        // SORTING TABELLE
+        // ========================================
+        
+        let pipelineSortColumn = null;
+        let pipelineSortDirection = 'asc';
+        let quarterSortColumn = null;
+        let quarterSortDirection = 'asc';
+        
+        function sortPipelineTable(column) {
+            if (pipelineSortColumn === column) {
+                pipelineSortDirection = pipelineSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                pipelineSortColumn = column;
+                pipelineSortDirection = 'asc';
+            }
+            
+            updateSortIndicators('pipeline', column, pipelineSortDirection);
+            renderPipelineTable();
+        }
+        
+        function sortQuarterTable(column) {
+            if (quarterSortColumn === column) {
+                quarterSortDirection = quarterSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                quarterSortColumn = column;
+                quarterSortDirection = 'asc';
+            }
+            
+            updateSortIndicators('quarter', column, quarterSortDirection);
+            renderQuarterTable();
+        }
+        
+        function updateSortIndicators(tableType, activeColumn, direction) {
+            const prefix = tableType === 'pipeline' ? 'pipeline' : 'quarter';
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.classList.remove('active');
+                indicator.textContent = '';
+            });
+            
+            const activeIndicator = document.querySelector(`.sort-indicator[data-column="${activeColumn}"]`);
+            if (activeIndicator) {
+                activeIndicator.classList.add('active');
+                activeIndicator.textContent = direction === 'asc' ? '▲' : '▼';
+            }
+        }
+        
+        // ========================================
+        // MODAL DETTAGLIO OPPORTUNITÀ (READ-ONLY)
+        // ========================================
+        
+        function showDealDetail(dealId) {
+            console.log('=== DEBUG showDealDetail ===');
+            console.log('dealId ricevuto:', dealId);
+            console.log('window.allOpportunities:', window.allOpportunities);
+            
+            if (!window.allOpportunities || window.allOpportunities.length === 0) {
+                alert('⚠️ Nessuna opportunità caricata.\n\nImporta prima i dati dalla Pipeline.');
+                return;
+            }
+            
+            const deal = window.allOpportunities.find(d => d.id === dealId);
+            console.log('Deal trovato:', deal);
+            
+            if (!deal) {
+                console.error('Deal non trovato con ID:', dealId);
+                console.error('IDs disponibili:', window.allOpportunities.map(d => d.id));
+                alert('⚠️ Opportunità non trovata\n\nID: ' + dealId);
+                return;
+            }
+            
+            // Popola campi
+            console.log('Popolamento campi modal...');
+            console.log('Cliente:', deal.customer);
+            document.getElementById('detailCustomer').textContent = deal.customer;
+            
+            console.log('Titolo:', deal.title);
+            document.getElementById('detailTitle').textContent = deal.title;
+            
+            console.log('Division:', deal.division);
+            document.getElementById('detailDivision').textContent = deal.division || '-';
+            
+            console.log('Industry:', deal.industry);
+            document.getElementById('detailIndustry').textContent = deal.industry || '-';
+            
+            console.log('Valore:', deal.value);
+            document.getElementById('detailValue').textContent = `€ ${deal.value.toLocaleString('it-IT')}`;
+            
+            // Stage con colore
+            const stageConfig = {
+                'v0': { label: 'V0 - Ipotesi', color: '#94a3b8' },
+                'v1': { label: 'V1 - In Preparazione', color: '#6b5b95' },
+                'v2': { label: 'V2 - In Trattativa', color: '#2563eb' },
+                'v3': { label: 'V3 - In Chiusura', color: '#dd8577' },
+                'won': { label: 'WON - Vinta', color: '#10b981' }
+            };
+            const stage = stageConfig[deal.stage] || stageConfig['v0'];
+            document.getElementById('detailStage').innerHTML = `<span style="padding: 6px 12px; background: ${stage.color}20; color: ${stage.color}; border-radius: 6px; font-weight: 600; font-size: 13px;">${stage.label}</span>`;
+            
+            document.getElementById('detailDate').textContent = deal.estimatedDate || '-';
+            
+            // Owner e Co-owners - LISTA COMPLETA 16 AM
+            const ownerNames = {
+                'alessia_mistretta': 'Alessia Mistretta',
+                'caterina_sonato': 'Caterina Sonato',
+                'elisa_rando': 'Elisa Rando',
+                'enrico_gambi': 'Enrico Gambi',
+                'federico_bechini': 'Federico Bechini',
+                'fulvia_amico': 'Fulvia Amico Di Meane',
+                'giancarlo_novara': 'Giancarlo Novara',
+                'giulia_bussi': 'Giulia Bussi',
+                'laura_pieralisi': 'Laura Pieralisi',
+                'marco_poggi': 'Marco Poggi',
+                'marta_coser': 'Marta Coser',
+                'michela_guardino': 'Michela Guardino',
+                'pierpaolo_griva': 'Pierpaolo Peretti Griva',
+                'rudra_chakraborty': 'Rudra Chakraborty',
+                'silvio_trombetta': 'Silvio Trombetta',
+                'susanna_gansin': 'Susanna Enrico Gansin'
+            };
+            
+            document.getElementById('detailOwner').textContent = ownerNames[deal.owner] || deal.owner;
+            
+            // Co-owners
+            if (deal.coOwners && deal.coOwners.length > 0) {
+                document.getElementById('detailCoOwnersField').style.display = 'block';
+                const coOwnersList = deal.coOwners.map(co => ownerNames[co.name] || co.name).join(', ');
+                document.getElementById('detailCoOwners').textContent = coOwnersList;
+            } else {
+                document.getElementById('detailCoOwnersField').style.display = 'none';
+            }
+            
+            // Quarter
+            document.getElementById('detailQ1').textContent = deal.valueQ1 > 0 ? `€ ${deal.valueQ1.toLocaleString('it-IT')}` : '-';
+            document.getElementById('detailQ2').textContent = deal.valueQ2 > 0 ? `€ ${deal.valueQ2.toLocaleString('it-IT')}` : '-';
+            document.getElementById('detailQ3').textContent = deal.valueQ3 > 0 ? `€ ${deal.valueQ3.toLocaleString('it-IT')}` : '-';
+            document.getElementById('detailQ4').textContent = deal.valueQ4 > 0 ? `€ ${deal.valueQ4.toLocaleString('it-IT')}` : '-';
+            
+            // Description/Notes
+            if (deal.description || deal.notes) {
+                document.getElementById('detailDescriptionField').style.display = 'block';
+                document.getElementById('detailDescription').textContent = deal.description || deal.notes || '';
+            } else {
+                document.getElementById('detailDescriptionField').style.display = 'none';
+            }
+            
+            // Mostra modal
+            console.log('Mostrando modal...');
+            document.getElementById('dealDetailModal').style.display = 'block';
+            console.log('=== Fine showDealDetail ===');
+        }
+        
+        function closeDealDetailModal() {
+            document.getElementById('dealDetailModal').style.display = 'none';
+        }
+        
+        // ========================================
+        // EXPORT CSV TUTTE LE OPPORTUNITÀ
+        // ========================================
+        
+        function exportAllOpportunitiesCSV() {
+            if (!window.allOpportunities || window.allOpportunities.length === 0) {
+                alert('⚠️ Nessuna opportunità da esportare\n\nImporta prima i dati dalla Pipeline.');
+                return;
+            }
+            
+            // Header CSV
+            const headers = [
+                'ID',
+                'Cliente',
+                'Titolo',
+                'Descrizione',
+                'Business Unit',
+                'Industry',
+                'Co-accounting',
+                'Owner',
+                'Co-owners',
+                'Valore Totale (€)',
+                'Q1 2026 (€)',
+                'Q2 2026 (€)',
+                'Q3 2026 (€)',
+                'Q4 2026 (€)',
+                'Stage',
+                'Probabilità (%)',
+                'Data Stimata',
+                'Note',
+                'Data Creazione',
+                'Ultimo Aggiornamento'
+            ];
+            
+            // Converti opportunità in righe CSV
+            const rows = window.allOpportunities.map(deal => {
+                const stageConfig = STAGE_CONFIG[deal.stage] || STAGE_CONFIG['v0'];
+                const coOwners = deal.coOwners && deal.coOwners.length > 0 
+                    ? deal.coOwners.map(co => formatAMName(co.name)).join('; ')
+                    : '-';
+                
+                return [
+                    deal.id || '',
+                    escapeCsvValue(deal.customer || ''),
+                    escapeCsvValue(deal.title || ''),
+                    escapeCsvValue(deal.description || ''),
+                    deal.division || '',
+                    deal.industry || '',
+                    deal.coAccounting === 'yes' ? 'Sì' : 'No',
+                    formatAMName(deal.owner) || '',
+                    coOwners,
+                    deal.value || 0,
+                    deal.valueQ1 || 0,
+                    deal.valueQ2 || 0,
+                    deal.valueQ3 || 0,
+                    deal.valueQ4 || 0,
+                    stageConfig.label || '',
+                    stageConfig.probability || 0,
+                    deal.estimatedDate ? new Date(deal.estimatedDate).toLocaleDateString('it-IT') : '',
+                    escapeCsvValue(deal.notes || ''),
+                    deal.createdAt ? new Date(deal.createdAt).toLocaleString('it-IT') : '',
+                    deal.updatedAt ? new Date(deal.updatedAt).toLocaleString('it-IT') : ''
+                ].join(',');
+            });
+            
+            // Combina header e righe
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            
+            // BOM UTF-8 per supporto Excel
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            // Nome file con data
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const filename = `MIDA_Opportunita_${dateStr}.csv`;
+            
+            // Download
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                // Feedback
+                alert(`✅ Export completato!\n\n📊 ${window.allOpportunities.length} opportunità esportate\n📄 File: ${filename}`);
+            } else {
+                alert('❌ Il tuo browser non supporta il download automatico.\n\nProva con Chrome, Firefox o Edge.');
+            }
+        }
+        
+        function escapeCsvValue(value) {
+            if (!value) return '';
+            // Escape virgolette e wrappa in virgolette se contiene virgole, newline o virgolette
+            const str = String(value);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+        
+        // ========================================
+        
+
+        // Chiudi menu mobile se click fuori
+        document.addEventListener('click', function(event) {
+            const menu = document.querySelector('.mobile-menu');
+            const dropdown = document.getElementById('mobileMenuDropdown');
+            
+            if (menu && dropdown && !menu.contains(event.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDA Sales Intelligence</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --mida-navy: #2d2654;
+            --mida-purple: #6b5b95;
+            --mida-pink: #bc6c8e;
+            --mida-coral: #dd8577;
+            --mida-orange: #ee9955;
+            --mida-purple-light: #9b8db3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--mida-navy);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(135deg, var(--mida-navy) 0%, var(--mida-purple) 50%, var(--mida-pink) 100%);
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(238, 153, 85, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(188, 108, 142, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(107, 91, 149, 0.15) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            width: 100%;
+            max-width: 450px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 48px 40px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 100px rgba(107, 91, 149, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: linear-gradient(135deg, var(--mida-purple), var(--mida-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 20px rgba(107, 91, 149, 0.3);
+        }
+
+        .tagline {
+            font-size: 15px;
+            color: #64748b;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .welcome-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtitle {
+            font-size: 15px;
+            color: #64748b;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--mida-navy);
+            margin-bottom: 10px;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0.5;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px 18px 16px 52px;
+            font-size: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            font-weight: 500;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--mida-purple);
+            box-shadow: 0 0 0 4px rgba(107, 91, 149, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-group input::placeholder {
+            color: #94a3b8;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, var(--mida-purple), var(--mida-orange));
+            color: white;
+            margin-top: 8px;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(107, 91, 149, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fee, #fdd);
+            border-left: 4px solid #ef4444;
+            color: #dc2626;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            animation: shake 0.4s;
+        }
+
+        .error-message.active {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .hint-text {
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Main Screen */
+        .main-screen {
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .main-screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 20px 32px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .top-logo {
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -1px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--mida-orange), var(--mida-coral));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-name {
+            font-weight: 700;
+            color: white;
+            font-size: 15px;
+        }
+
+        .logout-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .hero-section {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px 20px;
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .app-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 28px;
+            padding: 48px 40px;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .app-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--app-color-start), var(--app-color-end));
+            transform: scaleX(0);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .app-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .app-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.3);
+            border-color: rgba(107, 91, 149, 0.3);
+        }
+
+        .app-card.pipeline {
+            --app-color-start: var(--mida-purple);
+            --app-color-end: var(--mida-navy);
+        }
+
+        .app-card.dashboard {
+            --app-color-start: var(--mida-orange);
+            --app-color-end: var(--mida-coral);
+        }
+
+        .app-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--app-color-start), var(--app-color-end));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 32px rgba(107, 91, 149, 0.3);
+        }
+
+        .app-icon {
+            font-size: 40px;
+        }
+
+        .app-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--mida-navy);
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .app-description {
+            font-size: 15px;
+            color: #64748b;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            flex-grow: 1;
+        }
+
+        .app-btn {
+            padding: 16px 28px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            background: linear-gradient(135deg, var(--app-color-start), var(--app-color-end));
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            align-self: flex-start;
+            letter-spacing: 0.3px;
+        }
+
+        .app-btn:hover {
+            transform: translateX(4px);
+            box-shadow: 0 8px 24px rgba(107, 91, 149, 0.4);
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 80px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 36px 28px;
+                border-radius: 24px;
+            }
+
+            .logo {
+                font-size: 44px;
+            }
+
+            .welcome-text {
+                font-size: 20px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                gap: 16px;
+                padding: 20px;
+            }
+
+            .hero-title {
+                font-size: 32px;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            .apps-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .app-card {
+                padding: 36px 28px;
+            }
+
+            .app-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <div class="login-card">
+                <div class="logo-container">
+                    <div class="logo">MIDA</div>
+                    <div class="tagline">SALES INTELLIGENCE</div>
+                </div>
+
+                <div class="welcome-text">Benvenuto</div>
+                <div class="welcome-subtitle">Accedi al sistema MIDA</div>
+                
+                <div class="error-message" id="errorMessage">
+                    <span>⚠️</span>
+                    <span id="errorText">Username o password non corretti</span>
+                </div>
+
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                placeholder="nome.cognome"
+                                required
+                                autocomplete="username"
+                                autocapitalize="off"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔒</span>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                placeholder="Inserisci password"
+                                required
+                                autocomplete="current-password"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        Accedi al Sistema →
+                    </button>
+                </form>
+
+                <div class="hint-text">
+                    Inserisci username formato: <strong>nome.cognome</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Screen -->
+        <div id="mainScreen" class="main-screen">
+            <div class="main-container">
+                <div class="top-bar">
+                    <div class="top-bar-left">
+                        <div class="top-logo">MIDA</div>
+                        <div class="user-badge">
+                            <div class="user-avatar" id="userAvatar">U</div>
+                            <div class="user-name" id="userName">Utente</div>
+                        </div>
+                    </div>
+                    <button class="logout-btn" onclick="handleLogout()">
+                        🚪 Esci
+                    </button>
+                </div>
+
+                <div class="hero-section">
+                    <h1 class="hero-title">Sales Intelligence Platform</h1>
+                    <p class="hero-subtitle">Scegli l'applicazione che desideri utilizzare</p>
+                </div>
+
+                <div class="apps-grid">
+                    <a href="#" onclick="openPipeline(event)" class="app-card pipeline">
+                        <div class="app-icon-wrapper">
+                            <div class="app-icon">📊</div>
+                        </div>
+                        <h2 class="app-title">Pipeline Update</h2>
+                        <p class="app-description">
+                            Gestisci le tue opportunità commerciali in modo efficace. 
+                            Visualizza, aggiorna e monitora la tua pipeline personale. 
+                            Sincronizza automaticamente i dati con Google Drive.
+                        </p>
+                        <button class="app-btn">
+                            Apri Pipeline
+                            <span>→</span>
+                        </button>
+                    </a>
+
+                    <a href="https://sites.app-mida.biz/SalesReviewMeeting/mida_sales_dashboard_v2.html" class="app-card dashboard">
+                        <div class="app-icon-wrapper">
+                            <div class="app-icon">📈</div>
+                        </div>
+                        <h2 class="app-title">Sales Dashboard</h2>
+                        <p class="app-description">
+                            Dashboard esecutiva per analisi strategiche. 
+                            Monitora performance del team, analizza funnel, 
+                            gestisci benchmark e genera report dettagliati.
+                        </p>
+                        <button class="app-btn">
+                            Apri Dashboard
+                            <span>→</span>
+                        </button>
+                    </a>
+                </div>
+
+                <div class="footer">
+                    <p>MIDA Sales Intelligence © 2026 | Powered by Advanced Analytics</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        
+        const CORRECT_PASSWORD = 'salesreview26';
+
+        // Formatta nome da username
+        function formatName(username) {
+            const parts = username.toLowerCase().split('.');
+            if (parts.length >= 2) {
+                const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+                const lastName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+                return `${firstName} ${lastName}`;
+            }
+            return username.charAt(0).toUpperCase() + username.slice(1);
+        }
+
+        // Ottieni iniziali da username
+        function getInitials(username) {
+            const parts = username.toLowerCase().split('.');
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return username.substring(0, 2).toUpperCase();
+        }
+
+        // Valida formato username
+        function isValidUsername(username) {
+            // Formato: nome.cognome (minimo 3 caratteri, con un punto)
+            const usernameRegex = /^[a-z]+\.[a-z]+$/i;
+            return usernameRegex.test(username);
+        }
+
+        // Handle login
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            // Reset error
+            errorMessage.classList.remove('active');
+            
+            // Debug logging (per troubleshooting)
+            console.log('🔍 Login attempt:');
+            console.log('  Username:', username);
+            console.log('  Password length:', password.length);
+            console.log('  Username valid?', isValidUsername(username));
+            console.log('  Password match?', password === CORRECT_PASSWORD);
+            
+            // Valida formato username
+            if (!isValidUsername(username)) {
+                console.log('❌ Username formato non valido');
+                errorText.textContent = 'Username deve essere nel formato: nome.cognome';
+                errorMessage.classList.add('active');
+                return;
+            }
+            
+            // Verifica password
+            if (password !== CORRECT_PASSWORD) {
+                console.log('❌ Password non corretta');
+                errorText.textContent = 'Password non corretta';
+                errorMessage.classList.add('active');
+                return;
+            }
+            
+            console.log('✅ Login successful!');
+            
+            // Login success
+            const userData = {
+                username: username,
+                name: formatName(username),
+                initials: getInitials(username),
+                loginTime: new Date().toISOString()
+            };
+            
+            // Save to sessionStorage
+            sessionStorage.setItem('midaUser', JSON.stringify(userData));
+            
+            // Update UI
+            document.getElementById('userName').textContent = userData.name;
+            document.getElementById('userAvatar').textContent = userData.initials;
+            
+            // Show main screen
+            showMainScreen();
+        }
+
+        // Handle logout
+        function handleLogout() {
+            sessionStorage.removeItem('midaUser');
+            showLoginScreen();
+            
+            // Reset form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').classList.remove('active');
+        }
+
+        // Show login screen
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('mainScreen').classList.remove('active');
+        }
+
+        // Show main screen
+        function showMainScreen() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainScreen').classList.add('active');
+        }
+
+        // Check if already logged in
+        function checkAuth() {
+            const savedUser = sessionStorage.getItem('midaUser');
+            
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    
+                    // Update UI
+                    document.getElementById('userName').textContent = userData.name;
+                    document.getElementById('userAvatar').textContent = userData.initials;
+                    
+                    // Show main screen
+                    showMainScreen();
+                } catch (error) {
+                    sessionStorage.removeItem('midaUser');
+                    showLoginScreen();
+                }
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        // Apri Pipeline con auto-login
+        function openPipeline(event) {
+            event.preventDefault();
+            const userData = JSON.parse(sessionStorage.getItem('midaUser'));
+            
+            if (userData && userData.username) {
+                const username = userData.username; // es: marco.poggi
+                const pipelineUrl = `https://sites.app-mida.biz/SalesReviewMeeting/mida_pipeline_kanban_v2.html?am=${encodeURIComponent(username)}`;
+                window.location.href = pipelineUrl;
+            } else {
+                // Fallback se no session
+                window.location.href = 'https://sites.app-mida.biz/SalesReviewMeeting/mida_pipeline_kanban_v2.html';
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', checkAuth);
+    </script>
+</body>
+</html>
