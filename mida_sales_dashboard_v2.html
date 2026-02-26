@@ -1310,24 +1310,19 @@
                     </a>
                 </div>
                 <div class="import-section">
-                    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDashboardData()">
-                    
                     <!-- Desktop: bottoni normali -->
                     <div class="desktop-actions">
-                        <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
-                            📥 Importa da File
+                        <button id="refreshBtn" class="btn btn-success" onclick="refreshFromSupabase()" style="background: var(--mida-purple);">
+                            🔄 Aggiorna Dati
                         </button>
-                        <button class="btn btn-success" onclick="importFromGoogleDrive()" style="background: var(--mida-orange);">
-                            ☁️ Importa da Google Drive
-                        </button>
-                        <button class="btn btn-primary" onclick="exportAllOpportunitiesCSV()" style="background: var(--mida-purple);">
+                        <button class="btn btn-primary" onclick="exportAllOpportunitiesCSV()" style="background: var(--mida-navy);">
                             📊 Esporta CSV
                         </button>
                         <button class="btn btn-secondary" onclick="openBenchmarkModal()">
                             🎯 Benchmark
                         </button>
                         <button class="btn btn-secondary" onclick="clearData()">
-                            🗑️ Reset Dati
+                            🗑️ Reset Vista
                         </button>
                     </div>
                     
@@ -1338,17 +1333,14 @@
                         </button>
                         
                         <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
-                            <button onclick="document.getElementById('importFile').click(); toggleMobileMenu()">
-                                📥 Importa File
-                            </button>
-                            <button onclick="importFromGoogleDrive(); toggleMobileMenu()">
-                                ☁️ Google Drive
+                            <button onclick="refreshFromSupabase(); toggleMobileMenu()">
+                                🔄 Aggiorna Dati
                             </button>
                             <button onclick="openBenchmarkModal(); toggleMobileMenu()">
                                 🎯 Benchmark
                             </button>
                             <button onclick="clearData(); toggleMobileMenu()">
-                                🗑️ Reset Dati
+                                🗑️ Reset Vista
                             </button>
                         </div>
                     </div>
@@ -1677,10 +1669,132 @@
         let quarterViewFilter = 'total'; // total, weighted
         let quarterStageFilter = 'all'; // all, v0, v1, v2, v3, won
 
+        // ============================================
+        // SUPABASE CONFIGURATION
+        // ============================================
+        const SUPABASE_URL = 'https://pvnymhvuextryeoxgave.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
+
+        const STAGE_CONFIG_DASH = {
+            v0: { probability: 10, label: 'V0 - Possibile Opportunità' },
+            v1: { probability: 25, label: 'V1 - In Preparazione' },
+            v2: { probability: 50, label: 'V2 - Proposta Inviata' },
+            v3: { probability: 75, label: 'V3 - Attesa Firma' },
+            won: { probability: 100, label: 'WON - Firmato' }
+        };
+
+        async function loadFromSupabase() {
+            const url = `${SUPABASE_URL}/rest/v1/deals`;
+            const res = await fetch(url, {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            if (!res.ok) throw new Error('Errore caricamento Supabase: ' + res.status);
+            return await res.json();
+        }
+
+        function buildConsolidatedData(rows) {
+            // Raggruppa per owner
+            const byOwner = {};
+            rows.forEach(row => {
+                const owner = row.owner;
+                if (!byOwner[owner]) byOwner[owner] = [];
+                byOwner[owner].push({
+                    id: row.id,
+                    customer: row.customer,
+                    title: row.title,
+                    division: row.division,
+                    industry: row.industry,
+                    stage: row.stage,
+                    value: row.value,
+                    valueQ1: row.value_q1 || 0,
+                    valueQ2: row.value_q2 || 0,
+                    valueQ3: row.value_q3 || 0,
+                    valueQ4: row.value_q4 || 0,
+                    estimatedDate: row.estimated_date,
+                    owner: row.owner,
+                    notes: row.notes,
+                    coOwners: row.co_owners || []
+                });
+            });
+
+            consolidatedData = Object.entries(byOwner).map(([amId, amDeals]) => {
+                const simplify = d => ({
+                    id: d.id, customer: d.customer, title: d.title,
+                    division: d.division, stage: d.stage, value: d.value,
+                    valueQ1: d.valueQ1, valueQ2: d.valueQ2,
+                    valueQ3: d.valueQ3, valueQ4: d.valueQ4,
+                    estimatedDate: d.estimatedDate, owner: d.owner
+                });
+                const calcQ = (field) => {
+                    const inQ = amDeals.filter(d => (d[field] || 0) > 0);
+                    return {
+                        total: inQ.reduce((s,d) => s + d[field], 0),
+                        weighted: Math.round(inQ.reduce((s,d) => s + d[field] * (STAGE_CONFIG_DASH[d.stage]?.probability || 0) / 100, 0)),
+                        count: inQ.length,
+                        deals: inQ.map(simplify)
+                    };
+                };
+                const divGroups = {};
+                amDeals.forEach(d => {
+                    if (!divGroups[d.division]) divGroups[d.division] = { count: 0, value: 0, deals: [] };
+                    divGroups[d.division].count++;
+                    divGroups[d.division].value += d.value;
+                    divGroups[d.division].deals.push(simplify(d));
+                });
+                return {
+                    accountManager: amId,
+                    generatedAt: new Date().toISOString(),
+                    summary: {
+                        totalPipeline: amDeals.reduce((s,d) => s + d.value, 0),
+                        totalDeals: amDeals.length,
+                        weightedPipeline: amDeals.reduce((s,d) => s + d.value * (STAGE_CONFIG_DASH[d.stage]?.probability || 0) / 100, 0),
+                        wonValue: amDeals.filter(d => d.stage === 'won').reduce((s,d) => s + d.value, 0)
+                    },
+                    byStage: {
+                        v0: amDeals.filter(d => d.stage === 'v0').map(simplify),
+                        v1: amDeals.filter(d => d.stage === 'v1').map(simplify),
+                        v2: amDeals.filter(d => d.stage === 'v2').map(simplify),
+                        v3: amDeals.filter(d => d.stage === 'v3').map(simplify),
+                        won: amDeals.filter(d => d.stage === 'won').map(simplify)
+                    },
+                    byQuarter: {
+                        Q1: calcQ('valueQ1'), Q2: calcQ('valueQ2'),
+                        Q3: calcQ('valueQ3'), Q4: calcQ('valueQ4')
+                    },
+                    byDivision: divGroups
+                };
+            });
+        }
+
+        async function refreshFromSupabase() {
+            const btn = document.getElementById('refreshBtn');
+            if (btn) { btn.innerHTML = '⏳ Caricamento...'; btn.disabled = true; }
+            try {
+                const rows = await loadFromSupabase();
+                buildConsolidatedData(rows);
+                updateAMFilter();
+                updateDashboard();
+                const status = document.getElementById('importStatus');
+                const statusText = document.getElementById('importStatusText');
+                const total = rows.length;
+                const ams = [...new Set(rows.map(r => r.owner))].length;
+                statusText.textContent = `✅ Dati aggiornati da Supabase • ${ams} AM • ${total} opportunità • ${new Date().toLocaleString('it-IT')}`;
+                status.classList.add('active');
+                setTimeout(() => status.classList.remove('active'), 6000);
+            } catch(e) {
+                alert('❌ Errore caricamento dati:\n' + e.message);
+            } finally {
+                if (btn) { btn.innerHTML = '🔄 Aggiorna Dati'; btn.disabled = false; }
+            }
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFromLocalStorage();
-            updateDashboard();
+        document.addEventListener('DOMContentLoaded', async function() {
+            loadBenchmarkFromDrive(); // carica benchmark da localStorage
+            await refreshFromSupabase();
         });
 
         // Switch tabs
@@ -2670,28 +2784,16 @@
             });
         }
 
-        // Save to localStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('midaConsolidatedData', JSON.stringify(consolidatedData));
-        }
+        // Save/Load non più usati (Supabase è la fonte dati)
+        function saveToLocalStorage() { /* deprecato */ }
+        function loadFromLocalStorage() { /* deprecato */ }
 
-        // Load from localStorage
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem('midaConsolidatedData');
-            if (saved) {
-                consolidatedData = JSON.parse(saved);
-                updateAMFilter();
-            }
-        }
-
-        // Clear data
+        // Clear data (svuota la vista, non il DB)
         function clearData() {
-            if (confirm('Sei sicuro di voler cancellare tutti i dati importati?')) {
+            if (confirm('Vuoi resettare la vista? I dati rimangono nel database.')) {
                 consolidatedData = [];
-                localStorage.removeItem('midaConsolidatedData');
                 updateAMFilter();
                 updateDashboard();
-                
                 const status = document.getElementById('importStatus');
                 status.classList.remove('active');
             }
@@ -2699,125 +2801,28 @@
 
         // ============================================
         // GOOGLE APPS SCRIPT INTEGRATION
-        // ============================================
-        
-        // IMPORTANTE: Incolla qui lo STESSO URL del Pipeline Kanban
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrROsJAuqMH9HxKUfPN1kMNKYgFMzV68sGaSeTpBj1p3DdKHWiU0BG4_iDB-HATUCQow/exec';
-
-        // Import from Google Drive (via Apps Script)
-        async function importFromGoogleDrive() {
-            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
-                alert('⚠️ Configurazione mancante!\n\nDevi prima configurare Google Apps Script.\n\nSegui le istruzioni in GOOGLE_APPS_SCRIPT_SETUP.md');
-                return;
-            }
-
-            const importBtn = document.querySelector('button[onclick="importFromGoogleDrive()"]');
-            const originalText = importBtn ? importBtn.innerHTML : '';
-            if (importBtn) importBtn.innerHTML = '⏳ Caricamento...';
-
-            try {
-                // Call Apps Script to load all files
-                // IMPORTANTE: Apps Script richiede redirect per POST, quindi usiamo il metodo con callback
-                const response = await fetch(APPS_SCRIPT_URL + '?action=load', {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                
-                console.log('Apps Script response:', result);
-
-                if (result.success && result.data) {
-                    // Clear existing data
-                    consolidatedData = [];
-
-                    // Add all AM data
-                    result.data.forEach(amData => {
-                        if (amData.accountManager && amData.byStage) {
-                            consolidatedData.push(amData);
-                        }
-                    });
-
-                    if (consolidatedData.length > 0) {
-                        // Save and update
-                        saveToLocalStorage();
-                        updateAMFilter();
-                        updateDashboard();
-
-                        const status = document.getElementById('importStatus');
-                        const statusText = document.getElementById('importStatusText');
-                        statusText.textContent = `✅ Importati ${consolidatedData.length} Account Manager da Google Drive • ${new Date().toLocaleString('it-IT')}`;
-                        status.classList.add('active');
-
-                        setTimeout(() => status.classList.remove('active'), 7000);
-                    } else {
-                        alert('⚠️ Nessun dato valido trovato.\n\nGli Account Manager devono prima salvare le loro pipeline.');
-                    }
-                } else {
-                    throw new Error(result.error || 'Risposta non valida dal server');
-                }
-
-                if (importBtn) importBtn.innerHTML = originalText;
-
-            } catch (error) {
-                if (importBtn) importBtn.innerHTML = originalText;
-                console.error('Error importing from Google Drive:', error);
-                alert(`❌ Errore durante l'importazione:\n\n${error.message}\n\nVerifica:\n1. URL Apps Script corretto\n2. Script pubblicato come Web App\n3. Permessi "Chiunque" attivi\n\nDettagli tecnici: ${error.toString()}`);
-            }
-        }
-
-        // Check if Apps Script is configured
-        function checkAppsScriptConfig() {
-            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
-                const btn = document.querySelector('button[onclick="importFromGoogleDrive()"]');
-                if (btn) {
-                    btn.style.opacity = '0.5';
-                    btn.title = 'Configura prima Google Apps Script';
-                }
-            }
-        }
-
-        // Initialize check on load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFromLocalStorage();
-            loadBenchmarkFromDrive(); // Carica benchmark automaticamente
-            updateDashboard();
-            checkAppsScriptConfig();
-        });
+        // checkAppsScriptConfig rimosso - non più necessario
 
         // ============================================
         // BENCHMARK MANAGEMENT
         // ============================================
         
-        // Open benchmark modal
-        // Formatta input con separatore migliaia
         function formatBenchmarkInput(input) {
-            // Rimuovi tutto tranne i numeri
             let value = input.value.replace(/\D/g, '');
-            
-            // Converti in numero e formatta con punti
             if (value) {
                 const formatted = parseInt(value).toLocaleString('it-IT');
                 input.value = formatted;
             }
         }
 
-        // Converte valore formattato in numero
         function parseFormattedValue(value) {
             if (!value) return 0;
-            // Rimuovi punti e converti in numero
             return parseInt(value.replace(/\./g, '')) || 0;
         }
 
         function openBenchmarkModal() {
             const modal = document.getElementById('benchmarkModal');
             modal.style.display = 'flex';
-            
-            // Precompila con valori esistenti se presenti (già formattati)
             if (benchmarkData) {
                 document.getElementById('benchmarkPipeline').value = benchmarkData.pipeline ? benchmarkData.pipeline.toLocaleString('it-IT') : '';
                 document.getElementById('benchmarkWon').value = benchmarkData.won ? benchmarkData.won.toLocaleString('it-IT') : '';
@@ -2829,20 +2834,12 @@
             }
         }
 
-        // Close benchmark modal
         function closeBenchmarkModal() {
             document.getElementById('benchmarkModal').style.display = 'none';
         }
 
-        // Save benchmark to Google Drive
-        async function saveBenchmark(event) {
+        function saveBenchmark(event) {
             event.preventDefault();
-            
-            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
-                alert('⚠️ Configurazione mancante!\n\nDevi prima configurare Google Apps Script.');
-                return;
-            }
-            
             const data = {
                 pipeline: parseFormattedValue(document.getElementById('benchmarkPipeline').value),
                 won: parseFormattedValue(document.getElementById('benchmarkWon').value),
@@ -2853,66 +2850,17 @@
                 wonStage: parseFormattedValue(document.getElementById('benchmarkWonStage').value),
                 updatedAt: new Date().toISOString()
             };
-            
-            try {
-                // Salva su Google Drive
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'save_benchmark',
-                        benchmarkData: data
-                    }),
-                    mode: 'no-cors'
-                });
-                
-                // Salva anche in locale come backup
-                benchmarkData = data;
-                localStorage.setItem('midaBenchmark', JSON.stringify(data));
-                
-                closeBenchmarkModal();
-                updateDashboard(); // Aggiorna dashboard con i nuovi benchmark
-                
-                setTimeout(() => {
-                    alert('✅ Benchmark salvati su Google Drive!\n\nI valori saranno visibili come riferimento nei KPI.');
-                }, 500);
-                
-            } catch (error) {
-                console.error('Error saving benchmark:', error);
-                alert('⚠️ Tentativo di salvataggio inviato.\n\nSe l\'URL Apps Script è corretto, i benchmark dovrebbero essere salvati.');
-            }
+            benchmarkData = data;
+            localStorage.setItem('midaBenchmark', JSON.stringify(data));
+            closeBenchmarkModal();
+            updateDashboard();
+            alert('✅ Benchmark salvati!\n\nI valori saranno visibili come riferimento nei KPI.');
         }
 
-        // Load benchmark from Google Drive
-        async function loadBenchmarkFromDrive() {
-            if (APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL') {
-                // Prova a caricare da localStorage come fallback
-                const saved = localStorage.getItem('midaBenchmark');
-                if (saved) {
-                    benchmarkData = JSON.parse(saved);
-                }
-                return;
-            }
-            
-            try {
-                const response = await fetch(APPS_SCRIPT_URL + '?action=load_benchmark', {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-                
-                const result = await response.json();
-                
-                if (result.success && result.data) {
-                    benchmarkData = result.data;
-                    localStorage.setItem('midaBenchmark', JSON.stringify(result.data));
-                    console.log('Benchmark caricati da Google Drive:', result.data);
-                }
-            } catch (error) {
-                console.log('Benchmark non trovati su Drive, uso localStorage');
-                // Fallback to localStorage
-                const saved = localStorage.getItem('midaBenchmark');
-                if (saved) {
-                    benchmarkData = JSON.parse(saved);
-                }
+        function loadBenchmarkFromDrive() {
+            const saved = localStorage.getItem('midaBenchmark');
+            if (saved) {
+                try { benchmarkData = JSON.parse(saved); } catch(e) {}
             }
         }
     </script>
@@ -2978,7 +2926,7 @@
                 </div>
                 <div class="modal-footer" style="display: flex; gap: 12px; margin-top: 20px;">
                     <button type="button" class="btn btn-secondary" onclick="closeBenchmarkModal()">Annulla</button>
-                    <button type="submit" class="btn btn-success">💾 Salva su Google Drive</button>
+                    <button type="submit" class="btn btn-success">💾 Salva Benchmark</button>
                 </div>
             </form>
         </div>
