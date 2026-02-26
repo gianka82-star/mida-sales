@@ -687,8 +687,8 @@
 
         // Valida formato username
         function isValidUsername(username) {
-            // Formato: nome.cognome (minimo 3 caratteri, con un punto)
-            const usernameRegex = /^[a-z]+\.[a-z]+$/i;
+            // Formato: nome.cognome oppure nome.secondo.cognome (con almeno un punto)
+            const usernameRegex = /^[a-z]+(\.[a-z]+)+$/i;
             return usernameRegex.test(username);
         }
 
