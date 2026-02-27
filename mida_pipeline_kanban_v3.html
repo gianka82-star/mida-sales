@@ -3140,7 +3140,9 @@
         async function saveToLocalStorage() {
             try {
                 showSaveIndicator('⏳ Salvataggio...');
-                for (const deal of deals) {
+                // Salva tutti i deals dell'AM corrente con upsert
+                const amDeals = deals.filter(d => d.owner === currentAM);
+                for (const deal of amDeals) {
                     const row = {
                         id: deal.id,
                         owner: deal.owner,
@@ -3162,12 +3164,13 @@
                         created_at: deal.createdAt,
                         updated_at: deal.updatedAt
                     };
-                    await supabaseRequest('POST', 'deals', row, '?on_conflict=id');
+                    await supabaseUpsert('deals', row);
                 }
                 showSaveIndicator('✓ Salvato');
             } catch(e) {
                 console.error('Errore salvataggio:', e);
                 showSaveIndicator('⚠️ Errore salvataggio');
+                alert('Errore salvataggio: ' + e.message);
             }
         }
 
@@ -3460,7 +3463,7 @@
                 'apikey': SUPABASE_KEY,
                 'Authorization': `Bearer ${SUPABASE_KEY}`,
                 'Content-Type': 'application/json',
-                'Prefer': method === 'POST' ? 'return=representation' : 'return=representation'
+                'Prefer': 'return=representation'
             };
             const options = { method, headers };
             if (body) options.body = JSON.stringify(body);
@@ -3471,6 +3474,27 @@
             }
             const text = await res.text();
             return text ? JSON.parse(text) : [];
+        }
+
+        // Upsert (insert or update) tramite POST con header Prefer: resolution=merge-duplicates
+        async function supabaseUpsert(table, row) {
+            const url = `${SUPABASE_URL}/rest/v1/${table}`;
+            const headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=representation'
+            };
+            const res = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(row)
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(`Supabase upsert error: ${res.status} ${err}`);
+            }
+            return res.text();
         }
 
         // APPS_SCRIPT_URL mantenuto per compatibilità (non usato)
