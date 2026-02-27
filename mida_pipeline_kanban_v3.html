@@ -1141,44 +1141,15 @@
             <div class="user-info">
                 <span style="font-weight: 600; color: var(--mida-navy);">Account Manager:</span>
                 <div style="position: relative; flex: 1; max-width: 300px;">
-                    <input type="text" class="user-select" id="amSearch" placeholder="🔍 Cerca Account Manager..." 
-                           style="width: 100%; padding-right: 30px;"
-                           oninput="filterAccountManagers()"
-                           onfocus="showAccountManagerDropdown()"
-                           onblur="setTimeout(hideAccountManagerDropdown, 200)">
-                    <div id="amDropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid var(--mida-border); border-radius: 6px; margin-top: 4px; max-height: 300px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                        <div class="am-option" data-value="alessandro_giandolfo" onclick="selectAccountManager('alessandro_giandolfo', 'Alessandro Giandolfo')">Alessandro Giandolfo</div>
-                        <div class="am-option" data-value="alessia_mistretta" onclick="selectAccountManager('alessia_mistretta', 'Alessia Mistretta')">Alessia Mistretta</div>
-                        <div class="am-option" data-value="beatrice_conte" onclick="selectAccountManager('beatrice_conte', 'Beatrice Conte')">Beatrice Conte</div>
-                        <div class="am-option" data-value="caterina_sonato" onclick="selectAccountManager('caterina_sonato', 'Caterina Sonato')">Caterina Sonato</div>
-                        <div class="am-option" data-value="daniele_dal_pozzo" onclick="selectAccountManager('daniele_dal_pozzo', 'Daniele Dal Pozzo')">Daniele Dal Pozzo</div>
-                        <div class="am-option" data-value="daniele_de_felice" onclick="selectAccountManager('daniele_de_felice', 'Daniele De Felice')">Daniele De Felice</div>
-                        <div class="am-option" data-value="daniele_selmi" onclick="selectAccountManager('daniele_selmi', 'Daniele Selmi')">Daniele Selmi</div>
-                        <div class="am-option" data-value="eleonora_mauri" onclick="selectAccountManager('eleonora_mauri', 'Eleonora Mauri')">Eleonora Mauri</div>
-                        <div class="am-option" data-value="elisa_rando" onclick="selectAccountManager('elisa_rando', 'Elisa Rando')">Elisa Rando</div>
-                        <div class="am-option" data-value="enrico_gambi" onclick="selectAccountManager('enrico_gambi', 'Enrico Gambi')">Enrico Gambi</div>
-                        <div class="am-option" data-value="fulvia_amico" onclick="selectAccountManager('fulvia_amico', 'Fulvia Amico di Meane')">Fulvia Amico di Meane</div>
-                        <div class="am-option" data-value="giancarlo_novara" onclick="selectAccountManager('giancarlo_novara', 'Giancarlo Novara')">Giancarlo Novara</div>
-                        <div class="am-option" data-value="gregorio_macchi" onclick="selectAccountManager('gregorio_macchi', 'Gregorio Macchi')">Gregorio Macchi</div>
-                        <div class="am-option" data-value="greta_pepi" onclick="selectAccountManager('greta_pepi', 'Greta Pepi')">Greta Pepi</div>
-                        <div class="am-option" data-value="giulia_bussi" onclick="selectAccountManager('giulia_bussi', 'Giulia Bussi')">Giulia Bussi</div>
-                        <div class="am-option" data-value="isabella_grandi" onclick="selectAccountManager('isabella_grandi', 'Isabella Grandi')">Isabella Grandi</div>
-                        <div class="am-option" data-value="jacopo_melloni" onclick="selectAccountManager('jacopo_melloni', 'Jacopo Melloni')">Jacopo Melloni</div>
-                        <div class="am-option" data-value="laura_pieralisi" onclick="selectAccountManager('laura_pieralisi', 'Laura Virginia Pieralisi')">Laura Virginia Pieralisi</div>
-                        <div class="am-option" data-value="luca_chieregato" onclick="selectAccountManager('luca_chieregato', 'Luca Chieregato')">Luca Chieregato</div>
-                        <div class="am-option" data-value="marco_poggi" onclick="selectAccountManager('marco_poggi', 'Marco Poggi')">Marco Poggi</div>
-                        <div class="am-option" data-value="mariavittoria_gennaro" onclick="selectAccountManager('mariavittoria_gennaro', 'Mariavittoria Gennaro')">Mariavittoria Gennaro</div>
-                        <div class="am-option" data-value="marta_coser" onclick="selectAccountManager('marta_coser', 'Marta Coser')">Marta Coser</div>
-                        <div class="am-option" data-value="michela_guardino" onclick="selectAccountManager('michela_guardino', 'Michela Guardino')">Michela Guardino</div>
-                        <div class="am-option" data-value="najoua_meddad" onclick="selectAccountManager('najoua_meddad', 'Najoua Meddad')">Najoua Meddad</div>
-                        <div class="am-option" data-value="nathalie_ospina" onclick="selectAccountManager('nathalie_ospina', 'Nathalie Giselle Ospina Cruz')">Nathalie Giselle Ospina Cruz</div>
-                        <div class="am-option" data-value="pierpaolo_griva" onclick="selectAccountManager('pierpaolo_griva', 'Pierpaolo Peretti Griva')">Pierpaolo Peretti Griva</div>
-                        <div class="am-option" data-value="rudra_chakraborty" onclick="selectAccountManager('rudra_chakraborty', 'Rudra Chakraborty')">Rudra Chakraborty</div>
-                        <div class="am-option" data-value="sara_reggiani" onclick="selectAccountManager('sara_reggiani', 'Sara Maria Reggiani')">Sara Maria Reggiani</div>
-                        <div class="am-option" data-value="silvio_trombetta" onclick="selectAccountManager('silvio_trombetta', 'Silvio Trombetta')">Silvio Trombetta</div>
-                        <div class="am-option" data-value="susanna_gansin" onclick="selectAccountManager('susanna_gansin', 'Susanna Enrico Gansin')">Susanna Enrico Gansin</div>
-                        <div class="am-option" data-value="viola_dadda" onclick="selectAccountManager('viola_dadda', 'Viola Dadda')">Viola Dadda</div>
-                    </div>
+                    <select id="amSelect" class="user-select" style="width: 100%;" onchange="selectAccountManagerFromSelect(this)">
+                        <option value="">— Seleziona Account Manager —</option>
+                        <option value="alessandro_giandolfo">Alessandro Giandolfo</option>
+                        <option value="alessia_mistretta">Alessia Mistretta</option>
+                        <option value="beatrice_conte">Beatrice Conte</option>
+                        <option value="caterina_sonato">Caterina Sonato</option>
+                        <option value="daniele_dal_pozzo">Daniele Dal Pozzo</option>
+                        <option value="daniele_de_felice">Daniele De Felice</option>
+                    </select>
                 </div>
                 <input type="hidden" id="currentAM" value="">
             </div>
@@ -1632,49 +1603,42 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             setupDragAndDrop();
-            // autoSelectAM imposta currentAM e chiama loadPipeline() internamente
             autoSelectAM();
-            // Se nessun AM viene auto-selezionato, mostra pipeline vuota
-            if (!currentAM) {
-                document.getElementById('amSearch').value = '';
-                document.getElementById('amSearch').placeholder = '🔍 Seleziona Account Manager...';
-                renderKanban();
-                updateStats();
-                updateQuarterAnalysis();
-            }
+            // Se dopo l'auto-selezione il campo è ancora vuoto, mostra placeholder
+            setTimeout(() => {
+                if (!currentAM) {
+                    
+                    renderKanban();
+                    updateStats();
+                    updateQuarterAnalysis();
+                }
+            }, 100);
         });
 
-        // Account Manager dropdown functions
-        function showAccountManagerDropdown() {
-            document.getElementById('amDropdown').style.display = 'block';
-        }
-
-        function hideAccountManagerDropdown() {
-            document.getElementById('amDropdown').style.display = 'none';
-        }
-
-        function filterAccountManagers() {
-            const searchTerm = document.getElementById('amSearch').value.toLowerCase();
-            const options = document.querySelectorAll('.am-option');
-            
-            options.forEach(option => {
-                const text = option.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
+        // Account Manager select functions
+        function selectAccountManagerFromSelect(selectEl) {
+            const value = selectEl.value;
+            const displayName = selectEl.options[selectEl.selectedIndex].text;
+            if (!value) return;
+            currentAM = value;
+            currentAMName = displayName;
+            document.getElementById('currentAM').value = value;
+            loadPipeline();
         }
 
         function selectAccountManager(value, displayName) {
+            const sel = document.getElementById('amSelect');
+            if (sel) sel.value = value;
             document.getElementById('currentAM').value = value;
-            document.getElementById('amSearch').value = displayName;
             currentAM = value;
             currentAMName = displayName;
-            hideAccountManagerDropdown();
             loadPipeline();
         }
+
+        // Legacy stubs (non più usate ma lasciate per sicurezza)
+        function showAccountManagerDropdown() {}
+        function hideAccountManagerDropdown() {}
+        function filterAccountManagers() {}
 
         // Load pipeline for current AM
         async function loadPipeline() {
@@ -3561,12 +3525,18 @@
                 
                 if (amFullName) {
                     console.log('✅ AM trovato:', amFullName);
+                    const sel = document.getElementById('amSelect');
+                    if (sel) sel.value = amKey;
                     selectAccountManager(amKey, amFullName);
                 } else {
                     console.log('⚠️ AM non trovato nella mappa:', amKey);
                 }
             } else {
                 console.log('ℹ️ Nessun parametro AM trovato (né URL né sessionStorage)');
+                // Nessun login attivo: apri il dropdown così l'utente può selezionare
+                
+                
+                setTimeout(() => showAccountManagerDropdown(), 300);
             }
         }
 
