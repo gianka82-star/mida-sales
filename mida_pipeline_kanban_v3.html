@@ -1180,7 +1180,7 @@
                         <div class="am-option" data-value="viola_dadda" onclick="selectAccountManager('viola_dadda', 'Viola Dadda')">Viola Dadda</div>
                     </div>
                 </div>
-                <input type="hidden" id="currentAM" value="marco_poggi">
+                <input type="hidden" id="currentAM" value="">
             </div>
         </div>
 
@@ -1620,26 +1620,28 @@
 
         // Data storage
         let deals = [];
-        let currentAM = 'marco_poggi';
+        let currentAM = '';
+        let currentAMName = '';
         let editingDealId = null;
-        let quarterFilter = 'total'; // total, weighted
-        let quarterTableData = []; // Dati tabella per sorting
-        let quarterSortColumn = null; // Colonna ordinata
-        let quarterSortDirection = 'asc'; // asc, desc
-        let stageFilter = 'all'; // all, v0, v1, v2, v3, won
+        let quarterFilter = 'total';
+        let quarterTableData = [];
+        let quarterSortColumn = null;
+        let quarterSortDirection = 'asc';
+        let stageFilter = 'all';
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFromLocalStorage();
-            renderKanban();
+        document.addEventListener('DOMContentLoaded', async function() {
             setupDragAndDrop();
-            updateStats();
-            updateQuarterAnalysis();
-            
-            // Set initial AM display
-            document.getElementById('amSearch').value = 'Marco Poggi';
-            
-            checkAppsScriptConfig();
+            // autoSelectAM imposta currentAM e chiama loadPipeline() internamente
+            autoSelectAM();
+            // Se nessun AM viene auto-selezionato, mostra pipeline vuota
+            if (!currentAM) {
+                document.getElementById('amSearch').value = '';
+                document.getElementById('amSearch').placeholder = '🔍 Seleziona Account Manager...';
+                renderKanban();
+                updateStats();
+                updateQuarterAnalysis();
+            }
         });
 
         // Account Manager dropdown functions
@@ -1668,6 +1670,8 @@
         function selectAccountManager(value, displayName) {
             document.getElementById('currentAM').value = value;
             document.getElementById('amSearch').value = displayName;
+            currentAM = value;
+            currentAMName = displayName;
             hideAccountManagerDropdown();
             loadPipeline();
         }
@@ -3566,21 +3570,6 @@
             }
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async function() {
-            await loadFromLocalStorage();
-            renderKanban();
-            setupDragAndDrop();
-            updateStats();
-            updateQuarterAnalysis();
-            
-            // Set initial AM display
-            document.getElementById('amSearch').value = 'Marco Poggi';
-            
-            checkAppsScriptConfig();
-            // Auto-select AM from URL
-            autoSelectAM();
-        });
     </script>
 
     <!-- ============================================ -->
