@@ -1321,6 +1321,9 @@
                         <button class="btn btn-secondary" onclick="openBenchmarkModal()">
                             🎯 Benchmark
                         </button>
+                        <button class="btn btn-secondary" onclick="openPushReminderModal()" style="background: var(--mida-pink); color: white;">
+                            🔔 Invia Reminder
+                        </button>
                         <button class="btn btn-secondary" onclick="clearData()">
                             🗑️ Reset Vista
                         </button>
@@ -3326,6 +3329,146 @@
             }
         });
     </script>
+
+    <!-- ── PUSH REMINDER MODAL ─────────────────────────────── -->
+    <div id="pushReminderModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+      <div style="background:white; border-radius:16px; padding:32px; max-width:520px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.2); font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;">
+        <h2 style="color:#2d2654; font-size:20px; margin-bottom:8px;">🔔 Invia Reminder Push</h2>
+        <p style="color:#6b7280; font-size:14px; margin-bottom:24px;">Invia una notifica push agli Account Manager selezionati.</p>
+
+        <label style="display:block; font-weight:600; color:#2d2654; margin-bottom:8px; font-size:14px;">Destinatari</label>
+        <div style="margin-bottom:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; color:#374151;">
+            <input type="checkbox" id="pushSelectAll" onchange="toggleAllPushAM(this.checked)" style="width:16px; height:16px;">
+            <strong>Tutti gli AM</strong>
+          </label>
+        </div>
+        <div id="pushAMList" style="max-height:180px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; padding:8px; margin-bottom:16px; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+          <!-- Popolato da JS -->
+        </div>
+
+        <label style="display:block; font-weight:600; color:#2d2654; margin-bottom:6px; font-size:14px;">Titolo</label>
+        <input id="pushTitle" type="text" value="📢 Aggiornamento pipeline richiesto"
+          style="width:100%; padding:10px 12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; margin-bottom:16px; box-sizing:border-box;">
+
+        <label style="display:block; font-weight:600; color:#2d2654; margin-bottom:6px; font-size:14px;">Messaggio</label>
+        <textarea id="pushMessage" rows="3"
+          style="width:100%; padding:10px 12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; margin-bottom:24px; box-sizing:border-box; resize:vertical;"
+          placeholder="Scrivi il messaggio del reminder...">Aggiorna la tua pipeline con le opportunità più recenti.</textarea>
+
+        <div id="pushResult" style="display:none; padding:10px 14px; border-radius:8px; font-size:14px; margin-bottom:16px;"></div>
+
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+          <button onclick="closePushReminderModal()" style="padding:10px 20px; border:2px solid #e5e7eb; border-radius:8px; background:white; cursor:pointer; font-size:14px;">Annulla</button>
+          <button id="pushSendBtn" onclick="sendManualReminder()" style="padding:10px 24px; background:#bc6c8e; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:14px;">Invia Notifica</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    const PUSH_AM_LIST = [
+      {key:'alessandro_giandolfo', name:'Alessandro Giandolfo'},
+      {key:'alessia_mistretta', name:'Alessia Mistretta'},
+      {key:'beatrice_conte', name:'Beatrice Conte'},
+      {key:'caterina_sonato', name:'Caterina Sonato'},
+      {key:'daniele_dal_pozzo', name:'Daniele Dal Pozzo'},
+      {key:'daniele_de_felice', name:'Daniele De Felice'},
+      {key:'daniele_selmi', name:'Daniele Selmi'},
+      {key:'eleonora_mauri', name:'Eleonora Mauri'},
+      {key:'elisa_rando', name:'Elisa Rando'},
+      {key:'enrico_gambi', name:'Enrico Gambi'},
+      {key:'fulvia_amico', name:'Fulvia Amico di Meane'},
+      {key:'giancarlo_novara', name:'Giancarlo Novara'},
+      {key:'gregorio_macchi', name:'Gregorio Macchi'},
+      {key:'greta_pepi', name:'Greta Pepi'},
+      {key:'giulia_bussi', name:'Giulia Bussi'},
+      {key:'isabella_grandi', name:'Isabella Grandi'},
+      {key:'jacopo_melloni', name:'Jacopo Melloni'},
+      {key:'laura_pieralisi', name:'Laura Virginia Pieralisi'},
+      {key:'luca_chieregato', name:'Luca Chieregato'},
+      {key:'marco_poggi', name:'Marco Poggi'},
+      {key:'mariavittoria_gennaro', name:'Mariavittoria Gennaro'},
+      {key:'marta_coser', name:'Marta Coser'},
+      {key:'michela_guardino', name:'Michela Guardino'},
+      {key:'najoua_meddad', name:'Najoua Meddad'},
+      {key:'nathalie_ospina', name:'Nathalie Giselle Ospina Cruz'},
+      {key:'pierpaolo_griva', name:'Pierpaolo Peretti Griva'},
+      {key:'rudra_chakraborty', name:'Rudra Chakraborty'},
+      {key:'sara_reggiani', name:'Sara Maria Reggiani'},
+      {key:'silvio_trombetta', name:'Silvio Trombetta'},
+      {key:'susanna_gansin', name:'Susanna Enrico Gansin'},
+      {key:'viola_dadda', name:'Viola Dadda'}
+    ];
+
+    const SUPABASE_URL_PUSH = 'https://pvnymhvuextryeoxgave.supabase.co';
+    const SUPABASE_KEY_PUSH = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
+
+    function openPushReminderModal() {
+      const list = document.getElementById('pushAMList');
+      list.innerHTML = PUSH_AM_LIST.map(am => `
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#374151; padding:4px 6px; border-radius:6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+          <input type="checkbox" class="push-am-check" value="${am.key}" style="width:14px; height:14px;">
+          ${am.name}
+        </label>
+      `).join('');
+      document.getElementById('pushResult').style.display = 'none';
+      document.getElementById('pushReminderModal').style.display = 'flex';
+    }
+
+    function closePushReminderModal() {
+      document.getElementById('pushReminderModal').style.display = 'none';
+    }
+
+    function toggleAllPushAM(checked) {
+      document.querySelectorAll('.push-am-check').forEach(cb => cb.checked = checked);
+    }
+
+    async function sendManualReminder() {
+      const selectedKeys = [...document.querySelectorAll('.push-am-check:checked')].map(cb => cb.value);
+      const title = document.getElementById('pushTitle').value.trim();
+      const message = document.getElementById('pushMessage').value.trim();
+
+      if (!message) { alert('Inserisci un messaggio.'); return; }
+
+      const btn = document.getElementById('pushSendBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Invio...';
+
+      try {
+        const res = await fetch(`${SUPABASE_URL_PUSH}/functions/v1/send-manual-reminder`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY_PUSH}`
+          },
+          body: JSON.stringify({ amKeys: selectedKeys, title, message })
+        });
+        const data = await res.json();
+        const resultEl = document.getElementById('pushResult');
+        resultEl.style.display = 'block';
+        if (res.ok) {
+          resultEl.style.background = '#d1fae5';
+          resultEl.style.color = '#065f46';
+          resultEl.textContent = `Notifica inviata a ${data.sent} AM su ${data.total} registrati.`;
+        } else {
+          resultEl.style.background = '#fee2e2';
+          resultEl.style.color = '#991b1b';
+          resultEl.textContent = 'Errore: ' + (data.error || 'sconosciuto');
+        }
+      } catch (err) {
+        const resultEl = document.getElementById('pushResult');
+        resultEl.style.display = 'block';
+        resultEl.style.background = '#fee2e2';
+        resultEl.style.color = '#991b1b';
+        resultEl.textContent = 'Errore di rete: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Invia Notifica';
+      }
+    }
+    </script>
+
+    <script src="/mida-sales/pwa-manager.js" defer></script>
 
 </body>
 </html>
