@@ -571,12 +571,15 @@
         `).join('');
     }
 
-    // ── TOGGLE USER ──────────────────────────────────────────
+    // ── TOGGLE USER — aggiorna array locale, niente reload ──
     async function toggleUser(username, currentActive) {
         const ok = await sbPatch('mida_users', `?username=eq.${encodeURIComponent(username)}`, { active: !currentActive });
         if (ok) {
+            const u = users.find(u => u.username === username);
+            if (u) u.active = !currentActive;
+            renderTable();
+            updateStats();
             toast(currentActive ? '🚫 Utente disabilitato' : '✓ Utente riabilitato', currentActive ? 'error' : 'success');
-            await loadUsers();
         } else {
             toast(`Errore durante l'aggiornamento`, 'error');
         }
@@ -629,9 +632,20 @@
                 });
                 if (!ok) throw new Error('Patch failed');
             }
+            // Aggiorna array locale senza reload
+            const idx = users.findIndex(u => u.username === originalUsername);
+            if (idx !== -1) {
+                if (username !== originalUsername) {
+                    users[idx] = { ...users[idx], username, am_key: amKey, full_name: fullName, initials };
+                } else {
+                    users[idx] = { ...users[idx], am_key: amKey, full_name: fullName, initials };
+                }
+                users.sort((a, b) => a.full_name.localeCompare(b.full_name));
+            }
+            renderTable();
+            updateStats();
             toast('✓ Utente aggiornato');
             closeEditModal();
-            await loadUsers();
         } catch (err) {
             errEl.textContent = 'Errore durante il salvataggio: ' + err.message;
             errEl.style.display = 'block';
@@ -663,9 +677,11 @@
 
         const ok = await sbDelete('mida_users', `?username=eq.${encodeURIComponent(pendingDeleteUsername)}`);
         if (ok) {
+            users = users.filter(u => u.username !== pendingDeleteUsername);
+            renderTable();
+            updateStats();
             toast('🗑️ Utente eliminato', 'error');
             closeDeleteModal();
-            await loadUsers();
         } else {
             toast(`Errore durante l'eliminazione`, 'error');
             btn.disabled = false;
