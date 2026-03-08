@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDA Admin — Gestione Utenti</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --navy: #2d2654;
+            --purple: #6b5b95;
+            --pink: #bc6c8e;
+            --coral: #dd8577;
+            --orange: #ee9955;
+            --gray: #6b7280;
+            --light: #f3f4f6;
+            --border: #e5e7eb;
+            --white: #ffffff;
+            --green: #10b981;
+            --red: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: var(--light);
+            color: var(--navy);
+            min-height: 100vh;
+        }
+
+        /* ── LOGIN ─────────────────────────────────────────── */
+        #loginScreen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--purple) 100%);
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .login-card h1 { font-size: 24px; color: var(--navy); margin-bottom: 4px; }
+        .login-card p  { color: var(--gray); font-size: 14px; margin-bottom: 32px; }
+
+        .login-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--pink), var(--coral));
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+        }
+
+        .form-group { margin-bottom: 16px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+        .form-group input {
+            width: 100%; padding: 12px 14px;
+            border: 2px solid var(--border); border-radius: 10px;
+            font-size: 14px; transition: border-color 0.2s;
+        }
+        .form-group input:focus { outline: none; border-color: var(--purple); }
+
+        .login-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--navy), var(--purple));
+            color: white; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            margin-top: 8px; transition: opacity 0.2s;
+        }
+        .login-btn:hover { opacity: 0.9; }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error-msg {
+            background: #fee2e2; color: #991b1b;
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 13px; margin-bottom: 16px; display: none;
+        }
+        .error-msg.active { display: block; }
+
+        /* ── ADMIN SCREEN ───────────────────────────────────── */
+        #adminScreen { display: none; }
+
+        .topbar {
+            background: var(--navy);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar h1 { color: white; font-size: 18px; }
+        .topbar-badge {
+            background: var(--pink); color: white;
+            font-size: 11px; font-weight: 700;
+            padding: 3px 10px; border-radius: 20px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.15); color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px; border-radius: 8px;
+            font-size: 13px; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-logout:hover { background: rgba(255,255,255,0.25); }
+
+        .main-content { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+
+        /* ── STATS ──────────────────────────────────────────── */
+        .stats-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 16px; margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white; border-radius: 12px;
+            padding: 20px 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--color, var(--purple));
+        }
+
+        .stat-label { font-size: 12px; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 32px; font-weight: 800; color: var(--navy); margin-top: 4px; }
+
+        /* ── PANEL ──────────────────────────────────────────── */
+        .panel {
+            background: white; border-radius: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden; margin-bottom: 32px;
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .panel-header h2 { font-size: 16px; color: var(--navy); }
+        .panel-header p  { font-size: 13px; color: var(--gray); margin-top: 2px; }
+
+        .btn {
+            padding: 9px 18px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            border: none; transition: opacity 0.2s; display: inline-flex;
+            align-items: center; gap: 6px;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--purple); color: white; }
+        .btn-success { background: var(--green); color: white; }
+        .btn-danger  { background: var(--red); color: white; }
+        .btn-ghost   { background: var(--light); color: var(--navy); border: 1px solid var(--border); }
+
+        /* ── TABLE ──────────────────────────────────────────── */
+        .table-wrap { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            background: var(--light); padding: 12px 16px;
+            text-align: left; font-size: 12px; font-weight: 700;
+            color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+
+        .avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            color: white; font-weight: 700; font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .user-cell { display: flex; align-items: center; gap: 12px; }
+        .user-name { font-weight: 600; color: var(--navy); }
+        .user-username { font-size: 12px; color: var(--gray); font-family: monospace; }
+
+        .badge-active   { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+
+        .actions { display: flex; gap: 8px; }
+
+        /* ── ADD USER FORM ──────────────────────────────────── */
+        .add-form {
+            padding: 24px;
+            border-top: 1px solid var(--border);
+            display: none;
+            background: #fafafa;
+        }
+        .add-form.open { display: block; }
+        .add-form h3 { font-size: 15px; margin-bottom: 16px; color: var(--navy); }
+
+        .form-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px; margin-bottom: 16px;
+        }
+
+        .form-grid .form-group { margin-bottom: 0; }
+
+        .form-actions { display: flex; gap: 12px; }
+
+        /* ── PASSWORD PANEL ─────────────────────────────────── */
+        .pwd-form { padding: 24px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+        .pwd-form .form-group { margin-bottom: 0; min-width: 240px; }
+
+        /* ── TOAST ──────────────────────────────────────────── */
+        #toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: var(--navy); color: white;
+            padding: 12px 20px; border-radius: 10px;
+            font-size: 14px; font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.3s; z-index: 9999;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.success { background: var(--green); }
+        #toast.error   { background: var(--red); }
+
+        @media (max-width: 600px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .topbar { padding: 12px 16px; }
+            .main-content { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────── -->
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-badge">Admin</div>
+        <h1>MIDA Sales</h1>
+        <p>Accesso riservato agli amministratori</p>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <div class="form-group">
+            <label>Password Admin</label>
+            <input type="password" id="adminPwd" placeholder="Password amministratore"
+                onkeydown="if(event.key==='Enter') doAdminLogin()">
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="doAdminLogin()">Accedi</button>
+    </div>
+</div>
+
+<!-- ── ADMIN SCREEN ───────────────────────────────────────── -->
+<div id="adminScreen">
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>MIDA Admin</h1>
+            <span class="topbar-badge">Gestione Utenti</span>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">← Esci</button>
+    </div>
+
+    <div class="main-content">
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card" style="--color: var(--purple)">
+                <div class="stat-label">Utenti Totali</div>
+                <div class="stat-value" id="statTotal">—</div>
+            </div>
+            <div class="stat-card" style="--color: var(--green)">
+                <div class="stat-label">Utenti Attivi</div>
+                <div class="stat-value" id="statActive">—</div>
+            </div>
+            <div class="stat-card" style="--color: var(--red)">
+                <div class="stat-label">Disabilitati</div>
+                <div class="stat-value" id="statInactive">—</div>
+            </div>
+        </div>
+
+        <!-- Users panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Utenti del sistema</h2>
+                    <p>Aggiungi, modifica o disabilita l'accesso degli Account Manager</p>
+                </div>
+                <button class="btn btn-primary" onclick="toggleAddForm()">＋ Nuovo utente</button>
+            </div>
+
+            <!-- Add user form -->
+            <div class="add-form" id="addForm">
+                <h3>Aggiungi nuovo utente</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" id="newUsername" placeholder="es: mario.rossi">
+                    </div>
+                    <div class="form-group">
+                        <label>Nome completo *</label>
+                        <input type="text" id="newFullName" placeholder="es: Mario Rossi">
+                    </div>
+                    <div class="form-group">
+                        <label>Chiave AM *</label>
+                        <input type="text" id="newAmKey" placeholder="es: mario_rossi">
+                    </div>
+                    <div class="form-group">
+                        <label>Iniziali *</label>
+                        <input type="text" id="newInitials" placeholder="es: MR" maxlength="3">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-success" onclick="addUser()">✓ Salva utente</button>
+                    <button class="btn btn-ghost" onclick="toggleAddForm()">Annulla</button>
+                </div>
+            </div>
+
+            <!-- Users table -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Utente</th>
+                            <th>Username</th>
+                            <th>Chiave AM</th>
+                            <th>Stato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="5" style="text-align:center; color: var(--gray); padding: 32px;">Caricamento...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Password panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Password condivisa</h2>
+                    <p>La password usata da tutti gli AM per accedere al sistema</p>
+                </div>
+            </div>
+            <div class="pwd-form">
+                <div class="form-group">
+                    <label>Nuova password</label>
+                    <input type="text" id="newSharedPwd" placeholder="Inserisci nuova password">
+                </div>
+                <button class="btn btn-primary" onclick="updatePassword()">Aggiorna password</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+    const SUPABASE_URL = 'https://pvnymhvuextryeoxgave.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
+
+    let users = [];
+
+    // ── SUPABASE HELPERS ─────────────────────────────────────
+    async function sbGet(table, filter = '') {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+        return res.json();
+    }
+
+    async function sbUpsert(table, data) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.ok;
+    }
+
+    async function sbPatch(table, filter, data) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        return res.ok;
+    }
+
+    // ── TOAST ────────────────────────────────────────────────
+    function toast(msg, type = 'success') {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = `show ${type}`;
+        setTimeout(() => el.className = '', 3000);
+    }
+
+    // ── LOGIN ────────────────────────────────────────────────
+    async function doAdminLogin() {
+        const pwd = document.getElementById('adminPwd').value.trim();
+        const btn = document.getElementById('loginBtn');
+        const err = document.getElementById('errorMsg');
+
+        if (!pwd) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Verifica...';
+        err.style.display = 'none';
+
+        try {
+            const rows = await sbGet('config', '?key=eq.admin_password&select=value');
+            if (!rows.length || rows[0].value !== pwd) {
+                err.textContent = 'Password admin non corretta';
+                err.style.display = 'block';
+                return;
+            }
+            sessionStorage.setItem('midaAdmin', '1');
+            showAdminScreen();
+        } catch {
+            err.textContent = 'Errore di connessione';
+            err.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Accedi';
+        }
+    }
+
+    function doLogout() {
+        sessionStorage.removeItem('midaAdmin');
+        document.getElementById('adminScreen').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('adminPwd').value = '';
+    }
+
+    // ── LOAD DATA ────────────────────────────────────────────
+    async function showAdminScreen() {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('adminScreen').style.display = 'block';
+        await loadUsers();
+    }
+
+    async function loadUsers() {
+        users = await sbGet('mida_users', '?order=full_name.asc&select=*');
+        renderTable();
+        updateStats();
+    }
+
+    function updateStats() {
+        const active = users.filter(u => u.active).length;
+        document.getElementById('statTotal').textContent = users.length;
+        document.getElementById('statActive').textContent = active;
+        document.getElementById('statInactive').textContent = users.length - active;
+    }
+
+    // ── RENDER TABLE ─────────────────────────────────────────
+    function renderTable() {
+        const tbody = document.getElementById('usersTableBody');
+        if (!users.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:32px">Nessun utente</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <div class="avatar">${u.initials}</div>
+                        <div>
+                            <div class="user-name">${u.full_name}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="user-username">${u.username}</span></td>
+                <td><span class="user-username">${u.am_key}</span></td>
+                <td>
+                    <span class="${u.active ? 'badge-active' : 'badge-inactive'}">
+                        ${u.active ? 'Attivo' : 'Disabilitato'}
+                    </span>
+                </td>
+                <td>
+                    <div class="actions">
+                        <button class="btn ${u.active ? 'btn-danger' : 'btn-success'}" 
+                            onclick="toggleUser('${u.username}', ${u.active})">
+                            ${u.active ? '🚫 Disabilita' : '✓ Riabilita'}
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ── TOGGLE USER ──────────────────────────────────────────
+    async function toggleUser(username, currentActive) {
+        const ok = await sbPatch('mida_users', `?username=eq.${encodeURIComponent(username)}`, { active: !currentActive });
+        if (ok) {
+            toast(currentActive ? '🚫 Utente disabilitato' : '✓ Utente riabilitato', currentActive ? 'error' : 'success');
+            await loadUsers();
+        } else {
+            toast('Errore durante l\'aggiornamento', 'error');
+        }
+    }
+
+    // ── ADD USER ─────────────────────────────────────────────
+    function toggleAddForm() {
+        document.getElementById('addForm').classList.toggle('open');
+        // Auto-compila am_key e initials
+        document.getElementById('newUsername').addEventListener('input', autoFill);
+        document.getElementById('newFullName').addEventListener('input', autoFillInitials);
+    }
+
+    function autoFill() {
+        const un = document.getElementById('newUsername').value;
+        document.getElementById('newAmKey').value = un.replace(/\./g, '_');
+    }
+
+    function autoFillInitials() {
+        const name = document.getElementById('newFullName').value.trim();
+        const parts = name.split(' ');
+        if (parts.length >= 2) {
+            document.getElementById('newInitials').value = (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+    }
+
+    async function addUser() {
+        const username  = document.getElementById('newUsername').value.trim().toLowerCase();
+        const fullName  = document.getElementById('newFullName').value.trim();
+        const amKey     = document.getElementById('newAmKey').value.trim().toLowerCase();
+        const initials  = document.getElementById('newInitials').value.trim().toUpperCase();
+
+        if (!username || !fullName || !amKey || !initials) {
+            toast('Compila tutti i campi', 'error');
+            return;
+        }
+
+        const ok = await sbUpsert('mida_users', { username, am_key: amKey, full_name: fullName, initials, active: true });
+        if (ok) {
+            toast('✓ Utente aggiunto con successo');
+            document.getElementById('addForm').classList.remove('open');
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newFullName').value = '';
+            document.getElementById('newAmKey').value = '';
+            document.getElementById('newInitials').value = '';
+            await loadUsers();
+        } else {
+            toast('Errore durante il salvataggio', 'error');
+        }
+    }
+
+    // ── UPDATE PASSWORD ──────────────────────────────────────
+    async function updatePassword() {
+        const pwd = document.getElementById('newSharedPwd').value.trim();
+        if (!pwd) { toast('Inserisci una password', 'error'); return; }
+
+        const ok = await sbUpsert('config', { key: 'shared_password', value: pwd });
+        if (ok) {
+            toast('✓ Password aggiornata');
+            document.getElementById('newSharedPwd').value = '';
+        } else {
+            toast('Errore durante l\'aggiornamento', 'error');
+        }
+    }
+
+    // ── INIT ─────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+        if (sessionStorage.getItem('midaAdmin') === '1') {
+            showAdminScreen();
+        }
+    });
+</script>
+
+</body>
+</html>

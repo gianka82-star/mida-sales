@@ -666,133 +666,118 @@
     </div>
 
     <script>
-        // ============================================
-        // AUTHENTICATION
-        // ============================================
-        
-        const CORRECT_PASSWORD = 'salesreview26';
+        // ============================================================
+        // AUTHENTICATION — credenziali da Supabase, niente hardcoded
+        // ============================================================
 
-        // Formatta nome da username
-        function formatName(username) {
-            const parts = username.toLowerCase().split('.');
-            if (parts.length >= 2) {
-                const firstName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-                const lastName = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
-                return `${firstName} ${lastName}`;
-            }
-            return username.charAt(0).toUpperCase() + username.slice(1);
-        }
+        const SUPABASE_URL = 'https://pvnymhvuextryeoxgave.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
 
-        // Ottieni iniziali da username
-        function getInitials(username) {
-            const parts = username.toLowerCase().split('.');
-            if (parts.length >= 2) {
-                return (parts[0][0] + parts[1][0]).toUpperCase();
-            }
-            return username.substring(0, 2).toUpperCase();
-        }
-
-        // Valida formato username
-        function isValidUsername(username) {
-            // Formato: nome.cognome oppure nome.secondo.cognome (con almeno un punto)
-            const usernameRegex = /^[a-z]+(\.[a-z]+)+$/i;
-            return usernameRegex.test(username);
+        async function supabaseGet(table, filter = '') {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${filter}`, {
+                headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+            });
+            if (!res.ok) throw new Error(`Supabase error: ${res.status}`);
+            return res.json();
         }
 
         // Handle login
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
-            
+
             const username = document.getElementById('username').value.trim().toLowerCase();
             const password = document.getElementById('password').value.trim();
             const errorMessage = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
-            
-            // Reset error
+            const loginBtn = document.querySelector('.login-btn');
+
             errorMessage.classList.remove('active');
-            
-            // Debug logging (per troubleshooting)
-            console.log('🔍 Login attempt:');
-            console.log('  Username:', username);
-            console.log('  Password length:', password.length);
-            console.log('  Username valid?', isValidUsername(username));
-            console.log('  Password match?', password === CORRECT_PASSWORD);
-            
+
             // Valida formato username
-            if (!isValidUsername(username)) {
-                console.log('❌ Username formato non valido');
+            const usernameRegex = /^[a-z]+(\.[a-z]+)+$/i;
+            if (!usernameRegex.test(username)) {
                 errorText.textContent = 'Username deve essere nel formato: nome.cognome';
                 errorMessage.classList.add('active');
                 return;
             }
-            
-            // Verifica password
-            if (password !== CORRECT_PASSWORD) {
-                console.log('❌ Password non corretta');
-                errorText.textContent = 'Password non corretta';
+
+            // Loading state
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Accesso in corso...';
+
+            try {
+                // 1. Verifica password condivisa da Supabase
+                const configRows = await supabaseGet('config', '?key=eq.shared_password&select=value');
+                if (!configRows.length || configRows[0].value !== password) {
+                    errorText.textContent = 'Password non corretta';
+                    errorMessage.classList.add('active');
+                    return;
+                }
+
+                // 2. Verifica utente esiste ed è attivo
+                const userRows = await supabaseGet('mida_users', `?username=eq.${encodeURIComponent(username)}&active=eq.true&select=*`);
+                if (!userRows.length) {
+                    errorText.textContent = 'Utente non trovato o accesso disabilitato';
+                    errorMessage.classList.add('active');
+                    return;
+                }
+
+                const user = userRows[0];
+
+                // Login success
+                const userData = {
+                    username: user.username,
+                    am_key: user.am_key,
+                    name: user.full_name,
+                    initials: user.initials,
+                    loginTime: new Date().toISOString()
+                };
+
+                sessionStorage.setItem('midaUser', JSON.stringify(userData));
+
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userAvatar').textContent = userData.initials;
+
+                showMainScreen();
+
+            } catch (err) {
+                console.error('Login error:', err);
+                errorText.textContent = 'Errore di connessione. Riprova.';
                 errorMessage.classList.add('active');
-                return;
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Accedi';
             }
-            
-            console.log('✅ Login successful!');
-            
-            // Login success
-            const userData = {
-                username: username,
-                name: formatName(username),
-                initials: getInitials(username),
-                loginTime: new Date().toISOString()
-            };
-            
-            // Save to sessionStorage
-            sessionStorage.setItem('midaUser', JSON.stringify(userData));
-            
-            // Update UI
-            document.getElementById('userName').textContent = userData.name;
-            document.getElementById('userAvatar').textContent = userData.initials;
-            
-            // Show main screen
-            showMainScreen();
         }
 
         // Handle logout
         function handleLogout() {
             sessionStorage.removeItem('midaUser');
             showLoginScreen();
-            
-            // Reset form
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('errorMessage').classList.remove('active');
         }
 
-        // Show login screen
         function showLoginScreen() {
             document.getElementById('loginScreen').style.display = 'block';
             document.getElementById('mainScreen').classList.remove('active');
         }
 
-        // Show main screen
         function showMainScreen() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainScreen').classList.add('active');
         }
 
-        // Check if already logged in
         function checkAuth() {
             const savedUser = sessionStorage.getItem('midaUser');
-            
             if (savedUser) {
                 try {
                     const userData = JSON.parse(savedUser);
-                    
-                    // Update UI
                     document.getElementById('userName').textContent = userData.name;
                     document.getElementById('userAvatar').textContent = userData.initials;
-                    
-                    // Show main screen
                     showMainScreen();
-                } catch (error) {
+                } catch {
                     sessionStorage.removeItem('midaUser');
                     showLoginScreen();
                 }
@@ -801,22 +786,16 @@
             }
         }
 
-        // Apri Pipeline con auto-login
         function openPipeline(event) {
             event.preventDefault();
             const userData = JSON.parse(sessionStorage.getItem('midaUser'));
-            
-            if (userData && userData.username) {
-                const username = userData.username; // es: marco.poggi
-                const pipelineUrl = `https://gianka82-star.github.io/mida-sales/mida_pipeline_kanban_v3.html?am=${encodeURIComponent(username)}`;
-                window.location.href = pipelineUrl;
+            if (userData?.username) {
+                window.location.href = `https://gianka82-star.github.io/mida-sales/mida_pipeline_kanban_v3.html?am=${encodeURIComponent(userData.username)}`;
             } else {
-                // Fallback se no session
                 window.location.href = 'https://gianka82-star.github.io/mida-sales/mida_pipeline_kanban_v3.html';
             }
         }
 
-        // Initialize
         window.addEventListener('load', checkAuth);
     </script>
     <script src="/mida-sales/pwa-manager.js" defer></script>
