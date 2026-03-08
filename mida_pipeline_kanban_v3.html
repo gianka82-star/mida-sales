@@ -3664,7 +3664,11 @@
             } catch(e) {
                 console.error('Errore salvataggio:', e);
                 showSaveIndicator('⚠️ Errore salvataggio');
-                alert('Errore salvataggio: ' + e.message);
+                const isNetwork = e instanceof TypeError;
+                const msg = isNetwork
+                    ? '⚠️ Salvataggio fallito: connessione persa.\n\nIl tuo deal è salvato localmente.\nRiprova a salvare tra qualche secondo con il tasto "💾 Salva su Database".'
+                    : 'Errore salvataggio: ' + e.message;
+                alert(msg);
             }
         }
 
@@ -3973,7 +3977,7 @@
         }
 
         // Upsert (insert or update) tramite POST con header Prefer: resolution=merge-duplicates
-        async function supabaseUpsert(table, row) {
+        async function supabaseUpsert(table, row, retries = 3) {
             const url = `${SUPABASE_URL}/rest/v1/${table}`;
             const headers = {
                 'apikey': SUPABASE_KEY,
@@ -3981,16 +3985,29 @@
                 'Content-Type': 'application/json',
                 'Prefer': 'resolution=merge-duplicates,return=representation'
             };
-            const res = await fetch(url, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(row)
-            });
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(`Supabase upsert error: ${res.status} ${err}`);
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(row)
+                    });
+                    if (!res.ok) {
+                        const err = await res.text();
+                        throw new Error(`Supabase upsert error: ${res.status} ${err}`);
+                    }
+                    return res.text();
+                } catch (e) {
+                    const isNetworkError = e instanceof TypeError; // "Load failed", "Failed to fetch"
+                    if (isNetworkError && attempt < retries) {
+                        const delay = attempt * 1500; // 1.5s, 3s
+                        console.warn(`⚠️ Tentativo ${attempt} fallito (${e.message}), riprovo tra ${delay}ms...`);
+                        await new Promise(r => setTimeout(r, delay));
+                    } else {
+                        throw e; // Rilancia se non è errore di rete o ultimi tentativi esauriti
+                    }
+                }
             }
-            return res.text();
         }
 
         // APPS_SCRIPT_URL mantenuto per compatibilità (non usato)
