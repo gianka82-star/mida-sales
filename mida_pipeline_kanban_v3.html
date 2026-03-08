@@ -371,6 +371,9 @@
             transition: all 0.2s;
             border-left: 3px solid var(--stage-color);
             position: relative;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: none;
         }
 
         .deal-card::before {
@@ -393,6 +396,21 @@
 
         .deal-card.dragging {
             opacity: 0.5;
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .deal-card.drag-over-target {
+            outline: 2px dashed var(--mida-purple);
+            outline-offset: 2px;
+        }
+
+        .cards-container.drag-over-target {
+            background: rgba(107, 91, 149, 0.08);
+            border-radius: 8px;
+            outline: 2px dashed var(--mida-purple);
+            outline-offset: 4px;
         }
 
         .deal-customer {
@@ -905,6 +923,27 @@
             .header-actions {
                 flex-direction: column;
                 width: 100%;
+                display: none;
+            }
+
+            .header-actions.mobile-open {
+                display: flex;
+            }
+
+            .hamburger-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 16px;
+                background: var(--mida-purple);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                width: 100%;
+                justify-content: center;
             }
 
             .btn {
@@ -966,13 +1005,18 @@
             }
 
             .kanban-board {
-                flex-direction: column;
-                gap: 20px;
+                flex-direction: row;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                gap: 12px;
+                padding-bottom: 16px;
+                scroll-snap-type: x mandatory;
             }
 
             .kanban-column {
-                flex: 1 1 auto;
-                width: 100%;
+                flex: 0 0 280px;
+                scroll-snap-align: start;
+                width: 280px;
             }
 
             .column-header {
@@ -1130,7 +1174,7 @@
                         🏠 Home
                     </a>
                 </div>
-                <div class="header-actions">
+                <div class="header-actions" id="headerActions">
                     <button class="btn btn-secondary" onclick="exportToExcel()">
                         📥 Esporta CSV
                     </button>
@@ -1141,6 +1185,9 @@
                         🔄 Ricarica Dati
                     </button>
                 </div>
+                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" style="display:none;">
+                    ☰ Menu
+                </button>
             </div>
             
             <div class="user-info">
@@ -1639,6 +1686,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             setupDragAndDrop();
+            initMobileMenu();
             autoSelectAM();
             // Se dopo l'auto-selezione il campo è ancora vuoto, mostra placeholder
             setTimeout(() => {
@@ -3089,36 +3137,50 @@
             filterQuarterTable();
         }
 
-        // Drag and Drop
+        // Drag and Drop (mouse + touch)
         function setupDragAndDrop() {
             let draggedElement = null;
+            let touchClone = null;
+            let touchOffsetX = 0;
+            let touchOffsetY = 0;
+            let lastDropTarget = null;
 
+            // ── MOUSE DRAG ──────────────────────────────────────
             document.addEventListener('dragstart', function(e) {
                 if (e.target.classList.contains('deal-card')) {
                     draggedElement = e.target;
                     e.target.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
                 }
             });
 
             document.addEventListener('dragend', function(e) {
                 if (e.target.classList.contains('deal-card')) {
                     e.target.classList.remove('dragging');
+                    document.querySelectorAll('.drag-over-target').forEach(el => el.classList.remove('drag-over-target'));
                 }
             });
 
             document.querySelectorAll('.cards-container').forEach(container => {
                 container.addEventListener('dragover', function(e) {
                     e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    document.querySelectorAll('.drag-over-target').forEach(el => el.classList.remove('drag-over-target'));
+                    this.classList.add('drag-over-target');
+                });
+
+                container.addEventListener('dragleave', function() {
+                    this.classList.remove('drag-over-target');
                 });
 
                 container.addEventListener('drop', async function(e) {
                     e.preventDefault();
+                    this.classList.remove('drag-over-target');
                     if (draggedElement) {
                         const dealId = draggedElement.dataset.dealId;
                         const newStage = this.dataset.stage;
-                        
                         const deal = deals.find(d => d.id === dealId);
-                        if (deal) {
+                        if (deal && deal.stage !== newStage) {
                             deal.stage = newStage;
                             deal.updatedAt = new Date().toISOString();
                             await saveToLocalStorage();
@@ -3129,6 +3191,115 @@
                         }
                     }
                 });
+            });
+
+            // ── TOUCH DRAG ──────────────────────────────────────
+            document.addEventListener('touchstart', function(e) {
+                const card = e.target.closest('.deal-card');
+                if (!card) return;
+
+                const touch = e.touches[0];
+                const rect = card.getBoundingClientRect();
+                touchOffsetX = touch.clientX - rect.left;
+                touchOffsetY = touch.clientY - rect.top;
+                draggedElement = card;
+
+                // Crea clone visivo
+                touchClone = card.cloneNode(true);
+                touchClone.style.cssText = `
+                    position: fixed;
+                    width: ${rect.width}px;
+                    left: ${touch.clientX - touchOffsetX}px;
+                    top: ${touch.clientY - touchOffsetY}px;
+                    opacity: 0.85;
+                    pointer-events: none;
+                    z-index: 9999;
+                    transform: scale(1.03);
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+                    transition: none;
+                `;
+                document.body.appendChild(touchClone);
+                card.classList.add('dragging');
+
+                e.preventDefault();
+            }, { passive: false });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!draggedElement || !touchClone) return;
+                e.preventDefault();
+
+                const touch = e.touches[0];
+                touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+                touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+
+                // Evidenzia colonna sotto il dito
+                touchClone.style.display = 'none';
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                touchClone.style.display = '';
+
+                const container = elementBelow?.closest('.cards-container');
+                if (container !== lastDropTarget) {
+                    if (lastDropTarget) lastDropTarget.classList.remove('drag-over-target');
+                    if (container) container.classList.add('drag-over-target');
+                    lastDropTarget = container;
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', async function(e) {
+                if (!draggedElement) return;
+
+                const touch = e.changedTouches[0];
+
+                // Trova il container sotto il dito
+                if (touchClone) { touchClone.style.display = 'none'; }
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (touchClone) { touchClone.style.display = ''; }
+
+                const container = elementBelow?.closest('.cards-container');
+
+                // Rimuovi effetti visivi
+                draggedElement.classList.remove('dragging');
+                if (touchClone) { touchClone.remove(); touchClone = null; }
+                if (lastDropTarget) { lastDropTarget.classList.remove('drag-over-target'); lastDropTarget = null; }
+
+                // Aggiorna stage se dropped su colonna diversa
+                if (container) {
+                    const dealId = draggedElement.dataset.dealId;
+                    const newStage = container.dataset.stage;
+                    const deal = deals.find(d => d.id === dealId);
+                    if (deal && deal.stage !== newStage) {
+                        deal.stage = newStage;
+                        deal.updatedAt = new Date().toISOString();
+                        await saveToLocalStorage();
+                        renderKanban();
+                        updateStats();
+                        updateQuarterAnalysis();
+                        showSaveIndicator('✓ Stage aggiornato');
+                    }
+                }
+
+                draggedElement = null;
+            });
+        }
+
+        function toggleMobileMenu() {
+            const actions = document.getElementById('headerActions');
+            actions.classList.toggle('mobile-open');
+        }
+
+        // Mostra hamburger solo su mobile
+        function initMobileMenu() {
+            const btn = document.getElementById('hamburgerBtn');
+            if (window.innerWidth <= 768) {
+                btn.style.display = 'flex';
+            }
+            window.addEventListener('resize', () => {
+                if (window.innerWidth <= 768) {
+                    btn.style.display = 'flex';
+                } else {
+                    btn.style.display = 'none';
+                    document.getElementById('headerActions').classList.remove('mobile-open');
+                }
             });
         }
 
@@ -3703,3 +3874,4 @@
 
 </body>
 </html>
+
