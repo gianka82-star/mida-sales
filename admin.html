@@ -578,7 +578,7 @@
             toast(currentActive ? '🚫 Utente disabilitato' : '✓ Utente riabilitato', currentActive ? 'error' : 'success');
             await loadUsers();
         } else {
-            toast('Errore durante l\'aggiornamento', 'error');
+            toast(`Errore durante l'aggiornamento`, 'error');
         }
     }
 
@@ -667,7 +667,7 @@
             closeDeleteModal();
             await loadUsers();
         } else {
-            toast('Errore durante l'eliminazione', 'error');
+            toast(`Errore durante l'eliminazione`, 'error');
             btn.disabled = false;
             btn.textContent = 'Elimina definitivamente';
         }
@@ -729,7 +729,7 @@
             toast('✓ Password aggiornata');
             document.getElementById('newSharedPwd').value = '';
         } else {
-            toast('Errore durante l\'aggiornamento', 'error');
+            toast(`Errore durante l'aggiornamento`, 'error');
         }
     }
 
