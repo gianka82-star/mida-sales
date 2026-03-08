@@ -1492,7 +1492,7 @@
                                         Data Stimata <span class="sort-indicator" data-column="date"></span>
                                     </th>
                                     <th onclick="sortPipelineTable('owner')" style="cursor: pointer;">
-                                        Owner <span class="sort-indicator" data-column="owner"></span>
+                                        Account Mng <span class="sort-indicator" data-column="owner"></span>
                                     </th>
                                 </tr>
                             </thead>
@@ -2644,11 +2644,7 @@
                 const prob = STAGE_CONFIG[deal.stage].probability;
                 
                 // Co-owners badge
-                let coOwnersBadge = '';
-                if (deal.coOwners && deal.coOwners.length > 0) {
-                    const initials = deal.coOwners.map(co => getAMInitials(co.name)).join(', ');
-                    coOwnersBadge = `<div style="margin-top: 4px;"><span style="padding: 3px 8px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); color: #7b1fa2; border-radius: 10px; font-size: 11px; font-weight: 600;">🤝 ${initials}</span></div>`;
-                }
+
                 
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
@@ -2671,8 +2667,12 @@
                     </td>
                     <td>${estimatedDate}</td>
                     <td>
-                        ${formatAMName(deal.owner)}
-                        ${coOwnersBadge}
+                        <div style="font-weight:600; color:#374151;">${formatAMName(deal.owner)}</div>
+                        ${deal.coOwners && deal.coOwners.length > 0 ? deal.coOwners.map(co =>
+                            `<div style="margin-top:3px; font-size:12px; color:#7b1fa2;">
+                                🤝 ${formatAMName(co.name)}${co.pct != null ? ` <span style="color:#9ca3af;">(${co.pct}%)</span>` : ''}
+                            </div>`
+                        ).join('') : ''}
                     </td>
                 `;
                 tbody.appendChild(row);

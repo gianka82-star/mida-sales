@@ -1159,6 +1159,7 @@
             }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1175,6 +1176,9 @@
                     </a>
                 </div>
                 <div class="header-actions" id="headerActions">
+                    <button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
+                        📤 Importa Excel
+                    </button>
                     <button class="btn btn-secondary" onclick="exportToExcel()">
                         📥 Esporta CSV
                     </button>
@@ -4018,6 +4022,381 @@
             // Supabase non richiede configurazione aggiuntiva
         }
 
+
+        // ═══════════════════════════════════════════════════════
+        // IMPORT EXCEL — logica completa
+        // ═══════════════════════════════════════════════════════
+
+        const ADMIN_PASSWORD = 'midaadmin2026';
+
+        const COGNOME_MAP = {
+            'giandolfo': 'alessandro_giandolfo',
+            'mistretta': 'alessia_mistretta',
+            'conte': 'beatrice_conte',
+            'sonato': 'caterina_sonato',
+            'dal pozzo': 'daniele_dal_pozzo',
+            'de felice': 'daniele_de_felice',
+            'selmi': 'daniele_selmi',
+            'mauri': 'eleonora_mauri',
+            'rando': 'elisa_rando',
+            'gambi': 'enrico_gambi',
+            'amico di meane': 'fulvia_amico',
+            'amico': 'fulvia_amico',
+            'novara': 'giancarlo_novara',
+            'macchi': 'gregorio_macchi',
+            'pepi': 'greta_pepi',
+            'bussi': 'giulia_bussi',
+            'grandi': 'isabella_grandi',
+            'melloni': 'jacopo_melloni',
+            'pieralisi': 'laura_pieralisi',
+            'chieregato': 'luca_chieregato',
+            'poggi': 'marco_poggi',
+            'gennaro': 'mariavittoria_gennaro',
+            'coser': 'marta_coser',
+            'guardino': 'michela_guardino',
+            'meddad': 'najoua_meddad',
+            'ospina': 'nathalie_ospina',
+            'peretti griva': 'pierpaolo_griva',
+            'chakraborty': 'rudra_chakraborty',
+            'reggiani': 'sara_reggiani',
+            'trombetta': 'silvio_trombetta',
+            'enrico gansin': 'susanna_gansin',
+            'gansin': 'susanna_gansin',
+            'dadda': 'viola_dadda',
+            'abate': 'giampaolo_abate',
+            'cannavale': 'daniela_cannavale',
+        };
+
+        const STAGE_MAP_IMPORT = {
+            '0 - possibile opportunità': 'v0',
+            '1 - in preparazione': 'v1',
+            '2 - inviata': 'v2',
+            '3 - attesa firma': 'v3',
+            '4 - vinta': 'won',
+            'rifiutata': 'lost',
+            'gara persa': 'lost',
+        };
+
+        const BU_MAP_IMPORT = {
+            'people development': 'People Development',
+            'hr advisory': 'HR Advisory',
+            'change & adoption': 'Change & Adoption',
+            'sales boost': 'Sales Boost',
+            'indie': 'Communication', // Innovation Digital Engagement → Communication
+        };
+
+        let importParsedRows = [];
+        let importFileData = null;
+
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            showImportStep1();
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+            document.body.style.overflow = '';
+            importParsedRows = [];
+            importFileData = null;
+            document.getElementById('importPassword').value = '';
+            document.getElementById('importFileName').textContent = 'Nessun file selezionato';
+            document.getElementById('importFileInput').value = '';
+        }
+
+        function showImportStep1() {
+            ['importStep1','importStep2','importStep3','importStep4'].forEach(id => {
+                document.getElementById(id).style.display = id === 'importStep1' ? 'block' : 'none';
+            });
+        }
+
+        function onImportFileSelected(input) {
+            const file = input.files[0];
+            if (file) {
+                document.getElementById('importFileName').textContent = file.name;
+                importFileData = file;
+            }
+        }
+
+        // Parsing cognomi → am_key (match multi-token, ordine per lunghezza decrescente)
+        function parseOwners(raw) {
+            if (!raw) return [];
+            let text = String(raw).trim().toLowerCase().replace(/ - /g, ' ');
+            const found = [];
+            const keys = Object.keys(COGNOME_MAP).sort((a,b) => b.length - a.length);
+            for (const key of keys) {
+                if (text.includes(key)) {
+                    const amKey = COGNOME_MAP[key];
+                    if (!found.includes(amKey)) found.push(amKey);
+                    text = text.replace(key, '').trim();
+                }
+            }
+            return found;
+        }
+
+        // Converti data da Excel: datetime, stringa "q1"/"q2", null
+        function parseDate(raw) {
+            if (!raw) return null;
+            if (raw instanceof Date || (typeof raw === 'object' && raw.getTime)) {
+                return raw.toISOString().split('T')[0];
+            }
+            const s = String(raw).toLowerCase().trim();
+            if (s === 'q1') return '2026-03-31';
+            if (s === 'q2') return '2026-06-30';
+            if (s === 'q3') return '2026-09-30';
+            if (s === 'q4') return '2026-12-31';
+            // SheetJS restituisce date come numero seriale Excel
+            if (!isNaN(Number(raw))) {
+                const d = XLSX.SSF.parse_date_code(Number(raw));
+                if (d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+            }
+            return null;
+        }
+
+        function generateImportId(num) {
+            return `import_${String(num).padStart(4,'0')}`;
+        }
+
+        async function runImportParse() {
+            const pwd = document.getElementById('importPassword').value.trim();
+            if (pwd !== ADMIN_PASSWORD) {
+                alert('❌ Password errata.');
+                document.getElementById('importPassword').focus();
+                return;
+            }
+            if (!importFileData) {
+                alert('❌ Seleziona un file Excel prima di procedere.');
+                return;
+            }
+
+            // Leggi file con SheetJS
+            const buffer = await importFileData.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: 'array', cellDates: false });
+
+            // Cerca foglio "DB PIPE"
+            const sheetName = wb.SheetNames.find(n => n.trim() === 'DB PIPE');
+            if (!sheetName) {
+                alert('❌ Foglio "DB PIPE" non trovato nel file. Verifica che sia il formato corretto.');
+                return;
+            }
+
+            const ws = wb.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+            const headers = rows[0];
+
+            // Indici colonne (in base all'analisi del file)
+            const COL = {
+                num: 0, customer: 1, title: 2, tipologia: 3, bu: 4,
+                industry: 7, stage: 9, prob: 10, date: 11,
+                value: 14, collab: 16, value2026: 18,
+                owner: 25, account: 26,
+                q1pct: 27, q2pct: 28, q3pct: 29, q4pct: 30,
+                q1: 31, q2: 32, q3: 33, q4: 34,
+            };
+
+            importParsedRows = [];
+            let countOk = 0, countWarn = 0, countSkip = 0;
+
+            for (let i = 1; i < rows.length; i++) {
+                const r = rows[i];
+                const num = r[COL.num];
+
+                // Salta righe senza numero progressivo valido
+                if (num === null || num === undefined || typeof num !== 'number') continue;
+
+                const rawStage = r[COL.stage];
+                const stageKey = rawStage ? String(rawStage).trim().toLowerCase() : null;
+                const stage = stageKey ? (STAGE_MAP_IMPORT[stageKey] || 'v1') : 'v1';
+
+                const rawBU = r[COL.bu];
+                const buKey = rawBU ? String(rawBU).trim().toLowerCase() : null;
+                const division = buKey ? (BU_MAP_IMPORT[buKey] || rawBU || 'People Development') : 'People Development';
+
+                const rawOwner = r[COL.owner];
+                const ownerList = parseOwners(rawOwner);
+                const mainOwner = ownerList[0] || null;
+                const coOwners = ownerList.slice(1).map(amKey => ({
+                    name: amKey,
+                    pct: Math.floor(100 / ownerList.length),
+                    addedDate: new Date().toISOString(),
+                    addedBy: 'import_excel'
+                }));
+                const ownerPct = ownerList.length > 1
+                    ? Math.floor(100 / ownerList.length)
+                    : 100;
+
+                const value = typeof r[COL.value] === 'number' ? r[COL.value] : 0;
+                const q1 = typeof r[COL.q1] === 'number' ? r[COL.q1] : 0;
+                const q2 = typeof r[COL.q2] === 'number' ? r[COL.q2] : 0;
+                const q3 = typeof r[COL.q3] === 'number' ? r[COL.q3] : 0;
+                const q4 = typeof r[COL.q4] === 'number' ? r[COL.q4] : 0;
+
+                let status = 'ok';
+                let statusNote = '';
+                if (!mainOwner) { status = 'warn'; statusNote = 'Owner non riconosciuto'; }
+                else if (!rawStage) { status = 'warn'; statusNote = 'Stage mancante'; }
+
+                countOk += status === 'ok' ? 1 : 0;
+                countWarn += status === 'warn' ? 1 : 0;
+
+                importParsedRows.push({
+                    excelNum: num,
+                    id: generateImportId(num),
+                    customer: r[COL.customer] || '',
+                    title: r[COL.title] || '',
+                    division,
+                    industry: r[COL.industry] || '',
+                    stage,
+                    value,
+                    valueQ1: q1, valueQ2: q2, valueQ3: q3, valueQ4: q4,
+                    estimatedDate: parseDate(r[COL.date]),
+                    owner: mainOwner,
+                    ownerPct,
+                    coOwners,
+                    rawOwner: rawOwner || '',
+                    notes: '',
+                    status,
+                    statusNote,
+                });
+            }
+
+            // Mostra anteprima
+            renderImportPreview(countOk, countWarn);
+        }
+
+        function amKeyToLabel(key) {
+            const names = {
+                'alessandro_giandolfo':'Alessandro Giandolfo','alessia_mistretta':'Alessia Mistretta',
+                'beatrice_conte':'Beatrice Conte','caterina_sonato':'Caterina Sonato',
+                'daniele_dal_pozzo':'Daniele Dal Pozzo','daniele_de_felice':'Daniele De Felice',
+                'daniele_selmi':'Daniele Selmi','eleonora_mauri':'Eleonora Mauri',
+                'elisa_rando':'Elisa Rando','enrico_gambi':'Enrico Gambi',
+                'fulvia_amico':'Fulvia Amico di Meane','giancarlo_novara':'Giancarlo Novara',
+                'gregorio_macchi':'Gregorio Macchi','greta_pepi':'Greta Pepi',
+                'giulia_bussi':'Giulia Bussi','isabella_grandi':'Isabella Grandi',
+                'jacopo_melloni':'Jacopo Melloni','laura_pieralisi':'Laura Virginia Pieralisi',
+                'luca_chieregato':'Luca Chieregato','marco_poggi':'Marco Poggi',
+                'mariavittoria_gennaro':'Mariavittoria Gennaro','marta_coser':'Marta Coser',
+                'michela_guardino':'Michela Guardino','najoua_meddad':'Najoua Meddad',
+                'nathalie_ospina':'Nathalie Ospina','pierpaolo_griva':'Pierpaolo Peretti Griva',
+                'rudra_chakraborty':'Rudra Chakraborty','sara_reggiani':'Sara Reggiani',
+                'silvio_trombetta':'Silvio Trombetta','susanna_gansin':'Susanna Enrico Gansin',
+                'viola_dadda':'Viola Dadda','giampaolo_abate':'Giampaolo Romero Abate',
+                'daniela_cannavale':'Daniela Cannavale',
+            };
+            return names[key] || key || '—';
+        }
+
+        function renderImportPreview(countOk, countWarn) {
+            // Summary bar
+            const total = importParsedRows.length;
+            document.getElementById('importSummaryBar').innerHTML = `
+                <span>📊 <strong>${total}</strong> righe trovate</span>
+                <span style="color:#16a34a;">✅ <strong>${countOk}</strong> pronte</span>
+                ${countWarn > 0 ? `<span style="color:#d97706;">⚠️ <strong>${countWarn}</strong> con avvisi</span>` : ''}
+                <span style="color:#6b5b95;">🔄 Upsert su chiave <strong>#</strong></span>
+            `;
+
+            // Tabella anteprima
+            const tbody = document.getElementById('importPreviewBody');
+            tbody.innerHTML = importParsedRows.map(r => {
+                const bg = r.status === 'warn' ? '#fffbeb' : 'white';
+                const statusBadge = r.status === 'warn'
+                    ? `<span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">⚠️ ${r.statusNote}</span>`
+                    : `<span style="background:#dcfce7;color:#166534;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:700;">✅ OK</span>`;
+                const stageLabel = Object.entries({v0:'V0',v1:'V1',v2:'V2',v3:'V3',won:'WON',lost:'LOST'})[
+                    ['v0','v1','v2','v3','won','lost'].indexOf(r.stage)
+                ]?.[1] || r.stage;
+                const coOwnerCell = r.coOwners.length > 0
+                    ? r.coOwners.map(co => `${amKeyToLabel(co.name)} (${co.pct}%)`).join('<br>')
+                    : '—';
+                return `<tr style="background:${bg}; border-bottom:1px solid #f3f4f6;">
+                    <td style="padding:8px 12px; font-weight:700; color:#6b5b95;">${r.excelNum}</td>
+                    <td style="padding:8px 12px;">${statusBadge}</td>
+                    <td style="padding:8px 12px; font-weight:600; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${r.customer}">${r.customer}</td>
+                    <td style="padding:8px 12px; color:#6b7280; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${r.title}">${r.title}</td>
+                    <td style="padding:8px 12px; white-space:nowrap;"><span style="background:#f3f4f6;padding:2px 7px;border-radius:10px;font-size:11px;">${r.division}</span></td>
+                    <td style="padding:8px 12px; white-space:nowrap;"><span style="background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600;">${stageLabel}</span></td>
+                    <td style="padding:8px 12px; text-align:right; font-weight:700;">€ ${r.value.toLocaleString('it-IT')}</td>
+                    <td style="padding:8px 12px; white-space:nowrap; font-size:12px;">${amKeyToLabel(r.owner)} (${r.ownerPct}%)</td>
+                    <td style="padding:8px 12px; font-size:11px; color:#7b1fa2;">${coOwnerCell}</td>
+                </tr>`;
+            }).join('');
+
+            // Mostra step 2
+            document.getElementById('importStep1').style.display = 'none';
+            document.getElementById('importStep2').style.display = 'block';
+        }
+
+        async function runImportConfirm() {
+            const total = importParsedRows.length;
+            if (total === 0) { alert('Nessuna riga da importare.'); return; }
+
+            document.getElementById('importStep2').style.display = 'none';
+            document.getElementById('importStep3').style.display = 'block';
+
+            const btn = document.getElementById('importConfirmBtn');
+            btn.disabled = true;
+
+            let done = 0, errors = 0;
+            const now = new Date().toISOString();
+
+            for (const r of importParsedRows) {
+                try {
+                    const row = {
+                        id: r.id,
+                        owner: r.owner || 'giancarlo_novara',
+                        customer: r.customer,
+                        title: r.title,
+                        description: '',
+                        division: r.division,
+                        industry: r.industry,
+                        co_accounting: r.coOwners.length > 0 ? 'yes' : 'no',
+                        co_owners: r.coOwners,
+                        owner_pct: r.ownerPct,
+                        value: r.value,
+                        value_q1: r.valueQ1,
+                        value_q2: r.valueQ2,
+                        value_q3: r.valueQ3,
+                        value_q4: r.valueQ4,
+                        estimated_date: r.estimatedDate,
+                        stage: r.stage,
+                        previous_stage: r.stage === 'lost' ? null : null,
+                        notes: '',
+                        created_at: now,
+                        updated_at: now,
+                    };
+                    await supabaseUpsert('deals', row);
+                    done++;
+                } catch(e) {
+                    console.error('Import error row', r.excelNum, e);
+                    errors++;
+                    done++;
+                }
+
+                // Aggiorna progress bar
+                const pct = Math.round((done / total) * 100);
+                document.getElementById('importProgressBar').style.width = pct + '%';
+                document.getElementById('importProgressCount').textContent = `${done} / ${total}`;
+
+                // Piccola pausa per non saturare Supabase
+                if (done % 10 === 0) await new Promise(res => setTimeout(res, 100));
+            }
+
+            // Mostra risultato
+            document.getElementById('importStep3').style.display = 'none';
+            document.getElementById('importStep4').style.display = 'block';
+            const ok = done - errors;
+            document.getElementById('importResultIcon').textContent = errors === 0 ? '✅' : '⚠️';
+            document.getElementById('importResultTitle').textContent = errors === 0
+                ? `Import completato!`
+                : `Import completato con ${errors} errori`;
+            document.getElementById('importResultDetail').textContent =
+                `${ok} deal importati/aggiornati su ${total} righe elaborate.` +
+                (errors > 0 ? ` ${errors} righe non salvate — controlla la console per dettagli.` : '');
+        }
+
+
         // Auto-seleziona AM da URL parameter o sessionStorage
         function autoSelectAM() {
             console.log('🔍 AutoSelectAM chiamata');
@@ -4208,6 +4587,107 @@
     </div>
 
     <script src="/mida-sales/pwa-manager.js" defer></script>
+
+
+<!-- ── MODAL IMPORT EXCEL ─────────────────────────────────────── -->
+<div id="importModal" style="
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+    z-index:9000; overflow-y:auto; padding:20px; box-sizing:border-box;
+">
+  <div style="
+    background:white; border-radius:16px; max-width:960px; margin:0 auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;
+  ">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#6b5b95,#bc6c8e); padding:24px 28px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="color:white; font-size:20px; font-weight:800;">📤 Importa Pipeline da Excel</div>
+        <div style="color:rgba(255,255,255,0.8); font-size:13px; margin-top:4px;">Foglio "DB PIPE" — formato MIDA standard</div>
+      </div>
+      <button onclick="closeImportModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:18px;">✕</button>
+    </div>
+
+    <!-- Step 1: Password + File -->
+    <div id="importStep1" style="padding:28px;">
+      <div style="margin-bottom:20px;">
+        <label style="font-weight:700; color:#374151; display:block; margin-bottom:6px;">🔑 Password admin</label>
+        <input type="password" id="importPassword"
+          placeholder="Inserisci la password admin..."
+          style="width:100%; padding:10px 14px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; box-sizing:border-box;"
+          onkeydown="if(event.key==='Enter') document.getElementById('importFileInput').click()"
+        />
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="font-weight:700; color:#374151; display:block; margin-bottom:6px;">📁 File Excel (.xlsx)</label>
+        <div onclick="document.getElementById('importFileInput').click()" style="
+          border:2px dashed #9b8db3; border-radius:12px; padding:32px; text-align:center;
+          cursor:pointer; background:#faf9ff; transition:background 0.2s;
+        " onmouseenter="this.style.background='#f0ebff'" onmouseleave="this.style.background='#faf9ff'">
+          <div style="font-size:36px; margin-bottom:8px;">📊</div>
+          <div style="font-weight:700; color:#6b5b95;">Clicca per selezionare il file</div>
+          <div style="color:#9ca3af; font-size:13px; margin-top:4px;" id="importFileName">Nessun file selezionato</div>
+        </div>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" onchange="onImportFileSelected(this)" />
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button onclick="closeImportModal()" style="padding:10px 20px; border:2px solid #e5e7eb; background:white; border-radius:8px; cursor:pointer; font-weight:600;">Annulla</button>
+        <button onclick="runImportParse()" style="padding:10px 24px; background:#6b5b95; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:15px;">🔍 Analizza file</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Anteprima -->
+    <div id="importStep2" style="display:none; padding:0 28px 28px;">
+      <div id="importSummaryBar" style="
+        background:#f0ebff; border-radius:10px; padding:14px 20px;
+        display:flex; gap:24px; flex-wrap:wrap; margin-bottom:20px; font-size:13px;
+      "></div>
+      <div style="overflow-x:auto; max-height:420px; border:1px solid #e5e7eb; border-radius:10px;">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead style="position:sticky; top:0; z-index:1;">
+            <tr style="background:#6b5b95; color:white;">
+              <th style="padding:10px 12px; text-align:left; white-space:nowrap;">#</th>
+              <th style="padding:10px 12px; text-align:left; white-space:nowrap;">Stato</th>
+              <th style="padding:10px 12px; text-align:left;">Cliente</th>
+              <th style="padding:10px 12px; text-align:left;">Titolo</th>
+              <th style="padding:10px 12px; text-align:left;">BU</th>
+              <th style="padding:10px 12px; text-align:left;">Stage</th>
+              <th style="padding:10px 12px; text-align:right;">Valore €</th>
+              <th style="padding:10px 12px; text-align:left;">Owner → AM</th>
+              <th style="padding:10px 12px; text-align:left;">Co-owner → AM</th>
+            </tr>
+          </thead>
+          <tbody id="importPreviewBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px; padding:12px 16px; background:#fef3c7; border-radius:8px; font-size:13px; color:#92400e;">
+        ⚠️ L'import usa il campo <strong>#</strong> come chiave: deal già esistenti con lo stesso # verranno <strong>aggiornati</strong>, quelli nuovi verranno <strong>inseriti</strong>.
+      </div>
+      <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:20px;">
+        <button onclick="showImportStep1()" style="padding:10px 20px; border:2px solid #e5e7eb; background:white; border-radius:8px; cursor:pointer; font-weight:600;">← Indietro</button>
+        <button id="importConfirmBtn" onclick="runImportConfirm()" style="padding:10px 28px; background:#22c55e; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; font-size:15px;">✅ Conferma import</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Progresso -->
+    <div id="importStep3" style="display:none; padding:40px 28px; text-align:center;">
+      <div style="font-size:48px; margin-bottom:16px;">⏳</div>
+      <div style="font-size:18px; font-weight:700; color:#374151; margin-bottom:8px;" id="importProgressTitle">Importazione in corso...</div>
+      <div style="font-size:13px; color:#6b7280; margin-bottom:24px;" id="importProgressSub">Salvataggio su database</div>
+      <div style="background:#f3f4f6; border-radius:8px; height:10px; overflow:hidden; max-width:400px; margin:0 auto;">
+        <div id="importProgressBar" style="height:100%; background:#6b5b95; width:0%; transition:width 0.3s; border-radius:8px;"></div>
+      </div>
+      <div style="margin-top:12px; font-size:13px; color:#6b7280;" id="importProgressCount">0 / 0</div>
+    </div>
+
+    <!-- Step 4: Risultato -->
+    <div id="importStep4" style="display:none; padding:40px 28px; text-align:center;">
+      <div id="importResultIcon" style="font-size:56px; margin-bottom:16px;">✅</div>
+      <div id="importResultTitle" style="font-size:20px; font-weight:800; color:#374151; margin-bottom:8px;"></div>
+      <div id="importResultDetail" style="font-size:14px; color:#6b7280; margin-bottom:28px;"></div>
+      <button onclick="closeImportModal(); loadPipeline();" style="padding:12px 32px; background:#6b5b95; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">✓ Chiudi e ricarica pipeline</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
