@@ -133,38 +133,56 @@
         }
 
         .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
+            padding: 9px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
         }
 
         .btn-primary {
-            background: var(--mida-purple);
+            background: var(--mida-navy);
             color: white;
+            box-shadow: 0 2px 8px rgba(45,38,84,0.2);
         }
 
         .btn-primary:hover {
-            background: var(--mida-purple-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(107, 91, 149, 0.3);
+            background: #1e1a45;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(45,38,84,0.3);
         }
 
         .btn-secondary {
             background: white;
             color: var(--mida-navy);
-            border: 2px solid var(--mida-border);
+            border: 1.5px solid var(--mida-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
 
         .btn-secondary:hover {
-            background: var(--mida-light-gray);
             border-color: var(--mida-purple);
+            color: var(--mida-purple);
+            background: rgba(107,91,149,0.04);
+            box-shadow: 0 2px 8px rgba(107,91,149,0.12);
+        }
+
+        .btn-success {
+            background: var(--mida-purple);
+            color: white;
+            box-shadow: 0 2px 8px rgba(107,91,149,0.25);
+        }
+
+        .btn-success:hover {
+            background: #5a4a7e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(107,91,149,0.35);
         }
 
         .header-filters {
@@ -1164,6 +1182,40 @@
            MODAL STYLES - CRITICAL FIX
            ======================================== */
         
+
+        /* ── Filter pills ── */
+        .filter-btn, .stage-filter-btn {
+            padding: 7px 16px;
+            background: white;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            color: #6b7280;
+            letter-spacing: 0.1px;
+        }
+
+        .filter-btn:hover, .stage-filter-btn:hover {
+            border-color: var(--mida-purple);
+            color: var(--mida-purple);
+            background: rgba(107,91,149,0.05);
+        }
+
+        .filter-btn.active, .stage-filter-btn.active {
+            background: var(--mida-purple);
+            color: white;
+            border-color: var(--mida-purple);
+            box-shadow: 0 2px 10px rgba(107,91,149,0.25);
+        }
+
+        .stage-filter-btn[data-stage="v0"]:not(.active) { border-left: 3px solid #9b8db3; padding-left: 13px; }
+        .stage-filter-btn[data-stage="v1"]:not(.active) { border-left: 3px solid #6b5b95; padding-left: 13px; }
+        .stage-filter-btn[data-stage="v2"]:not(.active) { border-left: 3px solid #bc6c8e; padding-left: 13px; }
+        .stage-filter-btn[data-stage="v3"]:not(.active) { border-left: 3px solid #dd8577; padding-left: 13px; }
+        .stage-filter-btn[data-stage="won"]:not(.active) { border-left: 3px solid #ee9955; padding-left: 13px; }
+
         .modal {
             display: none;
             position: fixed;
@@ -1514,10 +1566,10 @@
                 <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 2px solid var(--mida-light-gray);">
                     <span style="font-weight: 700; color: var(--mida-navy); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Visualizza:</span>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="filter-btn active" data-filter="total" onclick="setQuarterViewFilter('total')" style="padding: 10px 20px; background: var(--mida-purple); color: white; border: 2px solid var(--mida-purple); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="filter-btn active" data-filter="total" onclick="setQuarterViewFilter('total')" >
                             Totale
                         </button>
-                        <button class="filter-btn" data-filter="weighted" onclick="setQuarterViewFilter('weighted')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="filter-btn" data-filter="weighted" onclick="setQuarterViewFilter('weighted')" >
                             Totale Ponderato
                         </button>
                     </div>
@@ -1526,22 +1578,22 @@
                     
                     <span style="font-weight: 700; color: var(--mida-navy); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Filtra per Stage:</span>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="stage-filter-btn active" data-stage="all" onclick="setQuarterStageFilter('all')" style="padding: 10px 20px; background: var(--mida-purple); color: white; border: 2px solid var(--mida-purple); border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn active" data-stage="all" onclick="setQuarterStageFilter('all')" >
                             Tutti
                         </button>
-                        <button class="stage-filter-btn" data-stage="v0" onclick="setQuarterStageFilter('v0')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #9b8db3; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn" data-stage="v0" onclick="setQuarterStageFilter('v0')" >
                             V0
                         </button>
-                        <button class="stage-filter-btn" data-stage="v1" onclick="setQuarterStageFilter('v1')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #6b5b95; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn" data-stage="v1" onclick="setQuarterStageFilter('v1')" >
                             V1
                         </button>
-                        <button class="stage-filter-btn" data-stage="v2" onclick="setQuarterStageFilter('v2')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #bc6c8e; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn" data-stage="v2" onclick="setQuarterStageFilter('v2')" >
                             V2
                         </button>
-                        <button class="stage-filter-btn" data-stage="v3" onclick="setQuarterStageFilter('v3')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #dd8577; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn" data-stage="v3" onclick="setQuarterStageFilter('v3')" >
                             V3
                         </button>
-                        <button class="stage-filter-btn" data-stage="won" onclick="setQuarterStageFilter('won')" style="padding: 10px 20px; background: white; color: var(--mida-navy); border: 2px solid var(--mida-border); border-left: 3px solid #ee9955; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                        <button class="stage-filter-btn" data-stage="won" onclick="setQuarterStageFilter('won')" >
                             WON
                         </button>
                     </div>
@@ -1727,15 +1779,28 @@
         };
 
         async function loadFromSupabase() {
-            const url = `${SUPABASE_URL}/rest/v1/deals`;
-            const res = await fetch(url, {
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            if (!res.ok) throw new Error('Errore caricamento Supabase: ' + res.status);
-            return await res.json();
+            // Supabase limita a 1000 righe per default — usiamo paginazione
+            const PAGE = 500;
+            let all = [];
+            let from = 0;
+            while (true) {
+                const url = `${SUPABASE_URL}/rest/v1/deals?order=id`;
+                const res = await fetch(url, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Range': `${from}-${from + PAGE - 1}`,
+                        'Range-Unit': 'items',
+                        'Prefer': 'count=none'
+                    }
+                });
+                if (!res.ok) throw new Error('Errore caricamento Supabase: ' + res.status);
+                const page = await res.json();
+                all = all.concat(page);
+                if (page.length < PAGE) break; // ultima pagina
+                from += PAGE;
+            }
+            return all;
         }
 
 
@@ -2196,7 +2261,7 @@
             quarterViewFilter = filter;
             document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
                 btn.classList.remove('active');
-                btn.style.background = 'white';
+                btn.style.background = '';
                 btn.style.color = 'var(--mida-navy)';
                 btn.style.borderColor = 'var(--mida-border)';
             });
@@ -2213,8 +2278,8 @@
             quarterStageFilter = stage;
             document.querySelectorAll('.stage-filter-btn').forEach(btn => {
                 btn.classList.remove('active');
-                btn.style.background = 'white';
-                btn.style.color = 'var(--mida-navy)';
+                btn.style.background = '';
+                btn.style.color = '';
                 btn.style.borderColor = 'var(--mida-border)';
             });
             event.target.classList.add('active');

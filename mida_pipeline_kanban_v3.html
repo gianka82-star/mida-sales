@@ -128,46 +128,56 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 9px 18px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
         }
 
         .btn-primary {
-            background: var(--mida-blue);
+            background: var(--mida-purple);
             color: white;
+            box-shadow: 0 2px 8px rgba(107,91,149,0.25);
         }
 
         .btn-primary:hover {
-            background: #1d4ed8;
+            background: #5a4a7e;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            box-shadow: 0 4px 14px rgba(107,91,149,0.35);
         }
 
         .btn-secondary {
             background: white;
             color: var(--mida-navy);
-            border: 1px solid var(--mida-border);
+            border: 1.5px solid var(--mida-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
 
         .btn-secondary:hover {
-            background: var(--mida-light-gray);
+            border-color: var(--mida-purple);
+            color: var(--mida-purple);
+            background: rgba(107,91,149,0.04);
+            box-shadow: 0 2px 8px rgba(107,91,149,0.12);
         }
 
         .btn-success {
-            background: var(--mida-green);
+            background: var(--mida-orange);
             color: white;
+            box-shadow: 0 2px 8px rgba(238,153,85,0.3);
         }
 
         .btn-success:hover {
-            background: #059669;
+            background: #d4813a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(238,153,85,0.4);
         }
 
         .user-info {
@@ -259,37 +269,34 @@
 
         .tab-btn {
             flex: 1;
-            min-width: 200px;
-            padding: 20px 32px;
-            background: white;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            color: var(--mida-gray);
-            font-size: 16px;
+            min-width: 160px;
+            padding: 14px 28px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            color: #9b8db3;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s ease;
             position: relative;
             white-space: nowrap;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
+            letter-spacing: 0.1px;
         }
 
         .tab-btn:hover {
-            background: white;
+            background: rgba(107,91,149,0.07);
             color: var(--mida-purple);
-            transform: translateY(-2px);
-            border-color: var(--mida-purple);
-            box-shadow: 0 4px 12px rgba(107, 91, 149, 0.15);
         }
 
         .tab-btn.active {
             color: white;
             background: var(--mida-purple);
-            border-color: var(--mida-purple);
-            box-shadow: 0 4px 16px rgba(107, 91, 149, 0.3);
-            transform: scale(1.02);
+            box-shadow: 0 3px 14px rgba(107,91,149,0.3);
         }
 
         .tab-btn.active::after {
@@ -480,39 +487,50 @@
 
         .deal-btn {
             flex: 1;
-            padding: 6px;
+            padding: 5px 8px;
             background: transparent;
-            border: 1px solid var(--mida-border);
-            border-radius: 4px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 6px;
             font-size: 11px;
+            font-weight: 600;
+            color: #6b7280;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.18s ease;
+            letter-spacing: 0.1px;
         }
 
         .deal-btn:hover {
-            background: var(--mida-light-gray);
+            background: #f8f7ff;
+            border-color: var(--mida-purple);
+            color: var(--mida-purple);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(107,91,149,0.12);
         }
 
         .add-card-btn {
             width: 100%;
-            padding: 12px;
-            background: white;
-            border: 2px dashed var(--mida-border);
-            border-radius: 8px;
-            color: var(--mida-gray);
-            font-size: 14px;
+            padding: 11px;
+            background: rgba(107,91,149,0.03);
+            border: 1.5px dashed rgba(107,91,149,0.3);
+            border-radius: 10px;
+            color: #9b8db3;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            letter-spacing: 0.2px;
         }
 
         .add-card-btn:hover {
-            border-color: var(--mida-blue);
-            color: var(--mida-blue);
-            background: rgba(37, 99, 235, 0.05);
+            border-color: var(--mida-purple);
+            color: var(--mida-purple);
+            background: rgba(107,91,149,0.07);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(107,91,149,0.1);
         }
 
         /* Quarter Analysis Section */
@@ -544,47 +562,46 @@
         }
 
         .filter-btn {
-            padding: 10px 20px;
+            padding: 7px 16px;
             background: white;
-            border: 2px solid var(--mida-border);
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-            color: var(--mida-navy);
+            transition: all 0.18s ease;
+            color: #6b7280;
+            letter-spacing: 0.1px;
         }
 
         .filter-btn:hover {
-            background: var(--mida-light-gray);
             border-color: var(--mida-purple);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            color: var(--mida-purple);
+            background: rgba(107,91,149,0.05);
         }
 
         .filter-btn.active {
             background: var(--mida-purple);
             color: white;
             border-color: var(--mida-purple);
-            box-shadow: 0 4px 12px rgba(107, 91, 149, 0.3);
-            transform: translateY(-1px);
+            box-shadow: 0 2px 10px rgba(107,91,149,0.25);
         }
-        
+
         .filter-btn[data-stage].active {
             background: var(--stage-color);
             border-color: var(--stage-color);
             color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         }
-        
+
         .filter-btn[data-stage]:not(.active) {
             border-left: 3px solid var(--stage-color);
+            padding-left: 13px;
         }
-        
+
         .filter-btn[data-stage]:not(.active):hover {
-            background: rgba(0, 0, 0, 0.03);
+            background: rgba(0,0,0,0.03);
             border-color: var(--stage-color);
-            border-left-width: 3px;
         }
 
         .quarter-grid {
@@ -1240,6 +1257,25 @@
                 </div>
                 <input type="hidden" id="currentAM" value="">
             </div>
+
+            <!-- Toggle Co-Account / Personale -->
+            <div style="display:flex; align-items:center; gap:8px; margin-left:8px;">
+                <span style="font-size:12px; color:#9ca3af; font-weight:600; white-space:nowrap;">Vista:</span>
+                <div style="display:flex; background:#f3f4f6; border-radius:20px; padding:3px; gap:2px;">
+                    <button id="viewModeTotal"
+                        onclick="setValueViewMode('total')"
+                        style="padding:5px 14px; border:none; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; background:#6b5b95; color:white;"
+                        title="Mostra il valore totale del deal">
+                        🤝 Co-Account
+                    </button>
+                    <button id="viewModePersonal"
+                        onclick="setValueViewMode('personal')"
+                        style="padding:5px 14px; border:none; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; background:transparent; color:#6b7280;"
+                        title="Mostra la tua quota personale">
+                        👤 Personale
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -1363,18 +1399,6 @@
             <div id="tab-quarters" class="tab-content">
                 <!-- Filters -->
                 <div class="quarter-filters">
-                    <span class="filter-label">Valore:</span>
-                    <div class="filter-btn-group">
-                        <button class="filter-btn active" id="viewModeTotal" onclick="setValueViewMode('total')" title="Mostra il valore totale del deal">
-                            Totale
-                        </button>
-                        <button class="filter-btn" id="viewModePersonal" onclick="setValueViewMode('personal')" title="Mostra la tua quota personale (co-accounting)">
-                            👤 Personale
-                        </button>
-                    </div>
-
-                    <div style="width: 2px; height: 32px; background: var(--mida-border);"></div>
-
                     <span class="filter-label">Visualizza:</span>
                     <div class="filter-btn-group">
                         <button class="filter-btn active" data-filter="total" onclick="setQuarterFilter('total')">
@@ -2794,8 +2818,15 @@
         // ── VALORE VIEW MODE ─────────────────────────────────
         function setValueViewMode(mode) {
             valueViewMode = mode;
-            document.getElementById('viewModeTotal').classList.toggle('active', mode === 'total');
-            document.getElementById('viewModePersonal').classList.toggle('active', mode === 'personal');
+            const btnTotal = document.getElementById('viewModeTotal');
+            const btnPersonal = document.getElementById('viewModePersonal');
+            if (btnTotal && btnPersonal) {
+                // stile pill inline
+                btnTotal.style.background = mode === 'total' ? '#6b5b95' : 'transparent';
+                btnTotal.style.color = mode === 'total' ? 'white' : '#6b7280';
+                btnPersonal.style.background = mode === 'personal' ? '#6b5b95' : 'transparent';
+                btnPersonal.style.color = mode === 'personal' ? 'white' : '#6b7280';
+            }
             renderKanban();
             updateStats();
             updateQuarterAnalysis();
