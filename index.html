@@ -543,6 +543,47 @@
     </style>
 </head>
 <body>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MOBILE SPLASH SCREEN
+         Visibile solo su mobile, scompare dopo il tap su Accedi
+    ════════════════════════════════════════════════════════ -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-orbs"></div>
+
+        <!-- Logo -->
+        <div class="splash-top">
+            <div class="splash-logo">MIDA</div>
+            <div class="splash-sub">Sales Intelligence</div>
+        </div>
+
+        <!-- Hero -->
+        <div class="splash-hero">
+            <div class="splash-icon">📊</div>
+            <div class="splash-title">La tua pipeline,<br>sempre con te</div>
+            <div class="splash-desc">Gestisci opportunità, monitora il team e tieni traccia dei tuoi deal ovunque tu sia.</div>
+        </div>
+
+        <!-- CTA + install banner -->
+        <div class="splash-bottom">
+            <!-- Banner installazione PWA (appare solo se installabile) -->
+            <div class="splash-install-banner" id="splashInstallBanner" onclick="triggerInstall()">
+                <div class="install-banner-icon">📲</div>
+                <div class="install-banner-text">
+                    <div class="install-banner-title">Aggiungi alla schermata Home</div>
+                    <div class="install-banner-sub">Accesso rapido come un'app nativa</div>
+                </div>
+                <div class="install-banner-arrow">›</div>
+            </div>
+
+            <button class="splash-cta" onclick="hideSplash()">
+                Accedi a MIDA →
+            </button>
+
+            <div class="splash-footer">Powered by MIDA SB S.p.A.</div>
+        </div>
+    </div>
+
     <div class="bg-animation"></div>
 
     <div class="container">
@@ -795,6 +836,59 @@
                 window.location.href = 'https://gianka82-star.github.io/mida-sales/mida_pipeline_kanban_v3.html';
             }
         }
+
+
+        // ============================================================
+        // SPLASH SCREEN — visibile solo su mobile al primo accesso
+        // ============================================================
+
+        let deferredInstallPrompt = null;
+
+        // Cattura evento beforeinstallprompt (Chrome Android)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            // Mostra il banner di installazione nella splash
+            const banner = document.getElementById('splashInstallBanner');
+            if (banner) banner.classList.add('visible');
+        });
+
+        function triggerInstall() {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then(() => {
+                deferredInstallPrompt = null;
+                const banner = document.getElementById('splashInstallBanner');
+                if (banner) banner.classList.remove('visible');
+            });
+        }
+
+        function hideSplash() {
+            const splash = document.getElementById('splashScreen');
+            splash.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+            splash.style.opacity = '0';
+            splash.style.transform = 'scale(1.03)';
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 350);
+            // Salva in sessionStorage: splash già mostrata in questa sessione
+            sessionStorage.setItem('splashShown', '1');
+        }
+
+        function initSplash() {
+            // Mostra splash solo su mobile e solo se non già mostrata in sessione
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const alreadyShown = sessionStorage.getItem('splashShown');
+            const isLoggedIn  = !!sessionStorage.getItem('midaUser');
+
+            if (isMobile && !alreadyShown && !isLoggedIn) {
+                const splash = document.getElementById('splashScreen');
+                splash.classList.add('visible');
+            }
+        }
+
+        // Chiamata all'avvio (prima di checkAuth)
+        window.addEventListener('DOMContentLoaded', initSplash);
 
         window.addEventListener('load', checkAuth);
     </script>
