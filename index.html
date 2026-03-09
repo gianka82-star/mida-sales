@@ -76,6 +76,12 @@
             padding: 20px;
         }
 
+        /* Main screen: allinea in alto, non al centro */
+        .container.main-active {
+            align-items: flex-start;
+            padding-top: 24px;
+        }
+
         /* Login Screen */
         .login-screen {
             width: 100%;
@@ -800,11 +806,13 @@
 
         function showLoginScreen() {
             document.getElementById('loginScreen').style.display = 'block';
+            document.querySelector('.container').classList.remove('main-active');
             document.getElementById('mainScreen').classList.remove('active');
         }
 
         function showMainScreen() {
             document.getElementById('loginScreen').style.display = 'none';
+            document.querySelector('.container').classList.add('main-active');
             document.getElementById('mainScreen').classList.add('active');
         }
 
