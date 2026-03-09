@@ -313,8 +313,8 @@
 
         .tab-btn {
             flex: 1;
-            min-width: 180px;
-            padding: 20px 32px;
+            min-width: 160px;
+            padding: 16px 24px;
             background: white;
             border: 2px solid transparent;
             border-radius: 8px;
@@ -328,7 +328,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8px;
         }
+
+        .tab-btn .tab-emoji { font-size: 20px; flex-shrink: 0; }
+        .tab-btn .tab-label-full { }
+        .tab-btn .tab-label-short { display: none; }
 
         .tab-btn:hover {
             background: white;
@@ -933,11 +938,15 @@
             }
 
             .tab-btn {
-                min-width: 140px;
-                padding: 16px 20px;
-                font-size: 14px;
-                flex-shrink: 0;
+                min-width: 0;
+                flex: 1;
+                padding: 12px 10px;
+                font-size: 13px;
+                flex-shrink: 1;
             }
+            .tab-btn .tab-label-full { display: none; }
+            .tab-btn .tab-label-short { display: inline; }
+            .tab-btn .tab-emoji { font-size: 18px; }
 
             .tab-content {
                 padding: 16px;
@@ -1147,14 +1156,12 @@
             }
 
             .tab-btn {
-                min-width: 120px;
-                padding: 14px 16px;
-                font-size: 13px;
+                min-width: 0;
+                padding: 10px 6px;
+                font-size: 11px;
+                flex-shrink: 1;
             }
-
-            .tab-btn span[style*="font-size: 22px"] {
-                font-size: 18px !important;
-            }
+            .tab-btn .tab-emoji { font-size: 16px; }
 
             .funnel-value {
                 font-size: 14px;
@@ -1477,16 +1484,19 @@
         <div class="tabs-container">
             <div class="tabs-header">
                 <button class="tab-btn active" onclick="switchTab('funnel')">
-                    <span style="font-size: 22px; margin-right: 8px;">📊</span>
-                    <span>Executive Funnel</span>
+                    <span class="tab-emoji">📊</span>
+                    <span class="tab-label-full">Executive Funnel</span>
+                    <span class="tab-label-short">Funnel</span>
                 </button>
                 <button class="tab-btn" onclick="switchTab('quarters')">
-                    <span style="font-size: 22px; margin-right: 8px;">📅</span>
-                    <span>Quarter Analysis</span>
+                    <span class="tab-emoji">📅</span>
+                    <span class="tab-label-full">Quarter Analysis</span>
+                    <span class="tab-label-short">Quarter</span>
                 </button>
                 <button class="tab-btn" onclick="switchTab('divisions')">
-                    <span style="font-size: 22px; margin-right: 8px;">📈</span>
-                    <span>Performance Business Unit</span>
+                    <span class="tab-emoji">📈</span>
+                    <span class="tab-label-full">Performance Business Unit</span>
+                    <span class="tab-label-short">Performance</span>
                 </button>
             </div>
 
@@ -1674,6 +1684,7 @@
                                     <th onclick="sortQuarterTable('total')" style="cursor: pointer;">
                                         Totale <span class="sort-indicator" data-column="total"></span>
                                     </th>
+                                    <th>Account Mng</th>
                                 </tr>
                             </thead>
                             <tbody id="quarterTableBody">
@@ -2633,6 +2644,25 @@
             }
         }
 
+        // ── Helper: genera HTML cella owner + co-owner per tabelle ──
+        function buildOwnerCell(deal) {
+            let html = `<div style="font-weight:600; color:#374151; font-size:13px;">${formatAMName(deal.owner)}</div>`;
+            if (deal.ownerPct != null && deal.ownerPct < 100) {
+                html += `<div style="font-size:11px; color:#9ca3af; margin-top:1px;">(${deal.ownerPct}%)</div>`;
+            }
+            if (deal.coOwners && deal.coOwners.length > 0) {
+                deal.coOwners.forEach(co => {
+                    html += `<div style="margin-top:3px; font-size:12px; color:#7b1fa2; display:flex; align-items:center; gap:3px;">
+                        🤝 <span style="font-weight:600;">${formatAMName(co.name)}</span>`;
+                    if (co.pct != null) {
+                        html += `<span style="color:#9ca3af; font-size:11px;">(${co.pct}%)</span>`;
+                    }
+                    html += `</div>`;
+                });
+            }
+            return html;
+        }
+
         function updatePipelineTable(deals) {
             window.pipelineDeals = deals; // Salva per sorting e export
             window.allOpportunities = deals; // ← AGGIUNTO: Salva anche qui per modal!
@@ -2731,14 +2761,7 @@
                         </div>
                     </td>
                     <td>${estimatedDate}</td>
-                    <td>
-                        <div style="font-weight:600; color:#374151;">${formatAMName(deal.owner)}</div>
-                        ${deal.coOwners && deal.coOwners.length > 0 ? deal.coOwners.map(co =>
-                            `<div style="margin-top:3px; font-size:12px; color:#7b1fa2;">
-                                🤝 ${formatAMName(co.name)}${co.pct != null ? ` <span style="color:#9ca3af;">(${co.pct}%)</span>` : ''}
-                            </div>`
-                        ).join('') : ''}
-                    </td>
+                    <td>${buildOwnerCell(deal)}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -2812,7 +2835,7 @@
             );
             
             if (dealsWithQuarters.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità con distribuzione quarter</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità con distribuzione quarter</td></tr>';
                 return;
             }
             
@@ -2892,6 +2915,7 @@
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
                 row.onclick = () => showDealDetail(deal.id);
+                const ownerCellQ = buildOwnerCell(deal);
                 row.innerHTML = `
                     <td><strong>${deal.customer}</strong></td>
                     <td>${deal.title}</td>
@@ -2901,6 +2925,7 @@
                     <td style="font-weight: 600;">${q3Display}</td>
                     <td style="font-weight: 600;">${q4Display}</td>
                     <td style="font-weight: 700; color: var(--mida-orange);">${totalDisplay}</td>
+                    <td>${ownerCellQ}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -3183,16 +3208,10 @@
                         <div id="detailDate" style="color: var(--mida-navy);"></div>
                     </div>
                     
-                    <!-- Owner -->
-                    <div class="detail-field" style="background: rgba(107, 91, 149, 0.04); padding: 14px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.1);">
-                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">Owner</label>
-                        <div id="detailOwner" style="font-weight: 600; color: var(--mida-navy);"></div>
-                    </div>
-                    
-                    <!-- Co-owners (se presenti) -->
-                    <div class="detail-field" id="detailCoOwnersField" style="grid-column: 1 / -1; display: none; background: linear-gradient(135deg, #f3e5f5, #e1bee7); padding: 14px; border-radius: 8px; border: 2px solid #7b1fa2;">
-                        <label style="font-weight: 600; color: #6a1b9a; font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.5px;">🤝 Co-owners</label>
-                        <div id="detailCoOwners" style="font-weight: 600; color: #4a148c;"></div>
+                    <!-- Account Manager (owner + co-owners unificati) -->
+                    <div class="detail-field" id="detailAccountField" style="grid-column: 1 / -1; background: rgba(107, 91, 149, 0.04); padding: 16px; border-radius: 8px; border: 1px solid rgba(107, 91, 149, 0.15);">
+                        <label style="font-weight: 600; color: var(--mida-gray); font-size: 11px; text-transform: uppercase; display: block; margin-bottom: 10px; letter-spacing: 0.5px;">👥 Account Manager</label>
+                        <div id="detailAccountTeam"></div>
                     </div>
                 </div>
                 
@@ -3372,16 +3391,34 @@
                 'susanna_gansin': 'Susanna Enrico Gansin'
             };
             
-            document.getElementById('detailOwner').textContent = ownerNames[deal.owner] || deal.owner;
-            
-            // Co-owners
-            if (deal.coOwners && deal.coOwners.length > 0) {
-                document.getElementById('detailCoOwnersField').style.display = 'block';
-                const coOwnersList = deal.coOwners.map(co => ownerNames[co.name] || co.name).join(', ');
-                document.getElementById('detailCoOwners').textContent = coOwnersList;
-            } else {
-                document.getElementById('detailCoOwnersField').style.display = 'none';
+            // Team Account Manager — owner + co-owner unificati
+            const teamEl = document.getElementById('detailAccountTeam');
+            const ownerName = formatAMName(deal.owner);
+            const ownerPct = (deal.ownerPct != null && deal.ownerPct < 100) ? deal.ownerPct : null;
+            const hasCoOwners = deal.coOwners && deal.coOwners.length > 0;
+
+            let teamHtml = `<div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(107,91,149,0.06); border-radius:8px; margin-bottom:${hasCoOwners ? '8px' : '0'};">
+                <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#6b5b95,#bc6c8e); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:14px; flex-shrink:0;">${ownerName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}</div>
+                <div>
+                    <div style="font-weight:700; color:#1e293b; font-size:14px;">${ownerName}</div>
+                    <div style="font-size:11px; color:#6b7280;">${ownerPct ? 'Owner · '+ownerPct+'%' : 'Owner principale'}</div>
+                </div>
+            </div>`;
+
+            if (hasCoOwners) {
+                deal.coOwners.forEach(co => {
+                    const coName = formatAMName(co.name);
+                    const initials = coName.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase();
+                    teamHtml += `<div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:linear-gradient(135deg,rgba(123,31,162,0.06),rgba(123,31,162,0.03)); border-radius:8px; margin-bottom:6px; border:1px solid rgba(123,31,162,0.12);">
+                        <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#7b1fa2,#9c27b0); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:12px; flex-shrink:0;">${initials}</div>
+                        <div>
+                            <div style="font-weight:700; color:#4a148c; font-size:13px;">🤝 ${coName}</div>
+                            <div style="font-size:11px; color:#7b1fa2;">${co.pct != null ? 'Co-owner · '+co.pct+'%' : 'Co-owner'}</div>
+                        </div>
+                    </div>`;
+                });
             }
+            teamEl.innerHTML = teamHtml;
             
             // Quarter
             document.getElementById('detailQ1').textContent = deal.valueQ1 > 0 ? `€ ${deal.valueQ1.toLocaleString('it-IT')}` : '-';
