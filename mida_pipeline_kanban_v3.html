@@ -190,6 +190,70 @@
             flex-wrap: wrap;
         }
 
+        /* ── Toggle Vista Co-Account / Personale ── */
+        .view-toggle-bar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 16px;
+            background: white;
+            border-radius: 10px;
+            border: 1.5px solid var(--mida-border);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .view-toggle-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--mida-navy);
+            white-space: nowrap;
+        }
+
+        .view-toggle-group {
+            display: flex;
+            background: var(--mida-light-gray);
+            border-radius: 22px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .view-toggle-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #6b7280;
+            background: transparent;
+            white-space: nowrap;
+            letter-spacing: 0.1px;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--mida-purple);
+            color: white;
+            box-shadow: 0 2px 8px rgba(107,91,149,0.3);
+        }
+
+        .view-toggle-btn:not(.active):hover {
+            background: rgba(107,91,149,0.08);
+            color: var(--mida-purple);
+        }
+
+        @media (max-width: 768px) {
+            .view-toggle-bar {
+                gap: 10px;
+                padding: 10px 12px;
+            }
+            .view-toggle-btn {
+                padding: 9px 18px;
+                font-size: 13px;
+            }
+        }
+
         .user-select, .period-select {
             padding: 8px 12px;
             border: 1px solid var(--mida-border);
@@ -1196,6 +1260,9 @@
                     <button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
                         📤 Importa Excel
                     </button>
+                    <button class="btn btn-secondary" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;" title="Rimuovi deal vuoti senza owner o cliente">
+                        🧹 Pulizia deal vuoti
+                    </button>
                     <button class="btn btn-secondary" onclick="exportToExcel()">
                         📥 Esporta CSV
                     </button>
@@ -1258,23 +1325,24 @@
                 <input type="hidden" id="currentAM" value="">
             </div>
 
-            <!-- Toggle Co-Account / Personale -->
-            <div style="display:flex; align-items:center; gap:8px; margin-left:8px;">
-                <span style="font-size:12px; color:#9ca3af; font-weight:600; white-space:nowrap;">Vista:</span>
-                <div style="display:flex; background:#f3f4f6; border-radius:20px; padding:3px; gap:2px;">
-                    <button id="viewModeTotal"
-                        onclick="setValueViewMode('total')"
-                        style="padding:5px 14px; border:none; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; background:#6b5b95; color:white;"
-                        title="Mostra il valore totale del deal">
-                        🤝 Co-Account
-                    </button>
-                    <button id="viewModePersonal"
-                        onclick="setValueViewMode('personal')"
-                        style="padding:5px 14px; border:none; border-radius:16px; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s; background:transparent; color:#6b7280;"
-                        title="Mostra la tua quota personale">
-                        👤 Personale
-                    </button>
-                </div>
+        </div>
+
+        <!-- Toggle Co-Account / Personale — riga dedicata -->
+        <div class="view-toggle-bar">
+            <span class="view-toggle-label">Vista valore:</span>
+            <div class="view-toggle-group">
+                <button id="viewModeTotal"
+                    class="view-toggle-btn active"
+                    onclick="setValueViewMode('total')"
+                    title="Mostra il valore totale del deal">
+                    🤝 Co-Account
+                </button>
+                <button id="viewModePersonal"
+                    class="view-toggle-btn"
+                    onclick="setValueViewMode('personal')"
+                    title="Mostra la tua quota personale">
+                    👤 Personale
+                </button>
             </div>
         </div>
 
@@ -2818,14 +2886,16 @@
         // ── VALORE VIEW MODE ─────────────────────────────────
         function setValueViewMode(mode) {
             valueViewMode = mode;
-            const btnTotal = document.getElementById('viewModeTotal');
+            const btnTotal    = document.getElementById('viewModeTotal');
             const btnPersonal = document.getElementById('viewModePersonal');
             if (btnTotal && btnPersonal) {
-                // stile pill inline
-                btnTotal.style.background = mode === 'total' ? '#6b5b95' : 'transparent';
-                btnTotal.style.color = mode === 'total' ? 'white' : '#6b7280';
-                btnPersonal.style.background = mode === 'personal' ? '#6b5b95' : 'transparent';
-                btnPersonal.style.color = mode === 'personal' ? 'white' : '#6b7280';
+                btnTotal.classList.toggle('active', mode === 'total');
+                btnPersonal.classList.toggle('active', mode === 'personal');
+                // pulisci eventuali stili inline residui
+                btnTotal.style.background = '';
+                btnTotal.style.color = '';
+                btnPersonal.style.background = '';
+                btnPersonal.style.color = '';
             }
             renderKanban();
             updateStats();
@@ -4054,6 +4124,125 @@
         }
 
 
+
+        // ═══════════════════════════════════════════════════════
+        // PULIZIA DEAL VUOTI (admin)
+        // Deal "vuoti" = owner null/empty OPPURE (customer vuoto E title vuoto)
+        // ═══════════════════════════════════════════════════════
+
+        let cleanupFoundIds = [];
+
+        function openCleanupModal() {
+            document.getElementById('cleanupModal').style.display = 'block';
+            document.getElementById('cleanupStep1').style.display = 'block';
+            document.getElementById('cleanupStep2').style.display = 'none';
+            document.getElementById('cleanupStep3').style.display = 'none';
+            document.getElementById('cleanupPassword').value = '';
+            document.getElementById('cleanupPassError').style.display = 'none';
+            cleanupFoundIds = [];
+        }
+
+        function closeCleanupModal() {
+            document.getElementById('cleanupModal').style.display = 'none';
+        }
+
+        async function runCleanupScan() {
+            const pwd = document.getElementById('cleanupPassword').value.trim();
+            if (pwd !== ADMIN_PASSWORD) {
+                document.getElementById('cleanupPassError').style.display = 'block';
+                return;
+            }
+            document.getElementById('cleanupPassError').style.display = 'none';
+
+            // Fetch tutti i deal (paginato)
+            const PAGE = 500;
+            let allDeals = [], from = 0;
+            while (true) {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?select=id,owner,customer,title,stage`, {
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Range': `${from}-${from+PAGE-1}`,
+                        'Range-Unit': 'items',
+                        'Prefer': 'count=none'
+                    }
+                });
+                const page = await res.json();
+                allDeals = allDeals.concat(page);
+                if (page.length < PAGE) break;
+                from += PAGE;
+            }
+
+            // Trova vuoti: owner mancante OPPURE sia customer che title sono vuoti
+            const empty = allDeals.filter(d =>
+                !d.owner ||
+                (!d.customer?.trim() && !d.title?.trim())
+            );
+
+            cleanupFoundIds = empty.map(d => d.id);
+
+            document.getElementById('cleanupStep1').style.display = 'none';
+            document.getElementById('cleanupStep2').style.display = 'block';
+
+            const listEl = document.getElementById('cleanupList');
+            const noItemsEl = document.getElementById('cleanupNoItems');
+            const deleteBtn = document.getElementById('cleanupDeleteBtn');
+            const resultEl = document.getElementById('cleanupScanResult');
+
+            if (empty.length === 0) {
+                listEl.style.display = 'none';
+                noItemsEl.style.display = 'block';
+                deleteBtn.style.display = 'none';
+                resultEl.innerHTML = '';
+            } else {
+                noItemsEl.style.display = 'none';
+                listEl.style.display = 'block';
+                deleteBtn.style.display = 'inline-block';
+                resultEl.innerHTML = `<div style="background:#fee2e2; border-radius:8px; padding:10px 14px; font-size:13px; color:#991b1b; font-weight:600;">
+                    Trovati <strong>${empty.length}</strong> deal vuoti su ${allDeals.length} totali
+                </div>`;
+                listEl.innerHTML = empty.map(d => `
+                    <div style="padding:10px 14px; border-bottom:1px solid #f3f4f6; font-size:13px; display:flex; gap:12px; align-items:center;">
+                        <span style="color:#9ca3af; font-family:monospace; flex-shrink:0;">${d.id.substring(0,16)}…</span>
+                        <span style="color:#6b7280;">owner: <strong style="color:${d.owner ? '#374151' : '#ef4444'}">${d.owner || '⚠️ vuoto'}</strong></span>
+                        <span style="color:#6b7280;">cliente: <em>${d.customer || '–'}</em></span>
+                        <span style="color:#6b7280;">titolo: <em>${d.title || '–'}</em></span>
+                        <span style="background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:10px; font-size:11px;">${d.stage || '–'}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function runCleanupDelete() {
+            if (cleanupFoundIds.length === 0) return;
+            if (!confirm(`Eliminare definitivamente ${cleanupFoundIds.length} deal vuoti da Supabase?\nQuesta operazione non è reversibile.`)) return;
+
+            const deleteBtn = document.getElementById('cleanupDeleteBtn');
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Eliminazione...';
+
+            let deleted = 0;
+            for (const id of cleanupFoundIds) {
+                try {
+                    await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${encodeURIComponent(id)}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    deleted++;
+                } catch (e) {
+                    console.error('Delete failed for', id, e);
+                }
+            }
+
+            document.getElementById('cleanupStep2').style.display = 'none';
+            document.getElementById('cleanupStep3').style.display = 'block';
+            document.getElementById('cleanupDoneMsg').textContent = `${deleted} deal vuoti eliminati con successo!`;
+            cleanupFoundIds = [];
+        }
+
         // ═══════════════════════════════════════════════════════
         // IMPORT EXCEL — logica completa
         // ═══════════════════════════════════════════════════════
@@ -4373,10 +4562,16 @@
             const now = new Date().toISOString();
 
             for (const r of importParsedRows) {
+                // Salta righe con owner non riconosciuto invece di assegnarle di default
+                if (!r.owner) {
+                    done++;
+                    errors++;
+                    continue;
+                }
                 try {
                     const row = {
                         id: r.id,
-                        owner: r.owner || 'giancarlo_novara',
+                        owner: r.owner,
                         customer: r.customer,
                         title: r.title,
                         description: '',
@@ -4716,6 +4911,62 @@
       <div id="importResultTitle" style="font-size:20px; font-weight:800; color:#374151; margin-bottom:8px;"></div>
       <div id="importResultDetail" style="font-size:14px; color:#6b7280; margin-bottom:28px;"></div>
       <button onclick="closeImportModal(); loadPipeline();" style="padding:12px 32px; background:#6b5b95; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:700; font-size:15px;">✓ Chiudi e ricarica pipeline</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL PULIZIA DEAL VUOTI (admin only)
+════════════════════════════════════════════════════════ -->
+<div id="cleanupModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9100; overflow-y:auto; padding:20px; box-sizing:border-box;">
+  <div style="background:white; border-radius:16px; max-width:600px; margin:40px auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); overflow:hidden;">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#ef4444,#dc2626); padding:20px 24px; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div style="color:white; font-size:18px; font-weight:800;">🧹 Pulizia Deal Vuoti</div>
+        <div style="color:rgba(255,255,255,0.8); font-size:12px; margin-top:2px;">Rimuovi opportunità senza owner o senza cliente</div>
+      </div>
+      <button onclick="closeCleanupModal()" style="background:rgba(255,255,255,0.2); border:none; color:white; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:16px;">✕</button>
+    </div>
+
+    <!-- Step 1: Password -->
+    <div id="cleanupStep1" style="padding:24px;">
+      <div style="margin-bottom:16px;">
+        <label style="font-weight:700; color:#374151; display:block; margin-bottom:6px;">🔑 Password admin</label>
+        <input type="password" id="cleanupPassword"
+          placeholder="Inserisci la password admin..."
+          style="width:100%; padding:10px 14px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; box-sizing:border-box;"
+        />
+      </div>
+      <div id="cleanupPassError" style="display:none; color:#ef4444; font-size:13px; margin-bottom:12px;">⚠️ Password non corretta</div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="closeCleanupModal()" style="padding:10px 18px; border:2px solid #e5e7eb; background:white; border-radius:8px; cursor:pointer; font-weight:600;">Annulla</button>
+        <button onclick="runCleanupScan()" style="padding:10px 22px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700;">🔍 Cerca deal vuoti</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Risultati scansione -->
+    <div id="cleanupStep2" style="display:none; padding:24px;">
+      <div id="cleanupScanResult" style="margin-bottom:16px;"></div>
+      <div id="cleanupList" style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; margin-bottom:16px;"></div>
+      <div id="cleanupNoItems" style="display:none; text-align:center; padding:32px; color:#6b7280;">
+        <div style="font-size:40px; margin-bottom:8px;">✅</div>
+        <div style="font-weight:700;">Nessun deal vuoto trovato!</div>
+        <div style="font-size:13px; margin-top:4px;">La pipeline è pulita.</div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="closeCleanupModal()" style="padding:10px 18px; border:2px solid #e5e7eb; background:white; border-radius:8px; cursor:pointer; font-weight:600;">Annulla</button>
+        <button id="cleanupDeleteBtn" onclick="runCleanupDelete()" style="padding:10px 22px; background:#ef4444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:700; display:none;">🗑️ Elimina tutti i deal vuoti</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Conferma -->
+    <div id="cleanupStep3" style="display:none; padding:32px; text-align:center;">
+      <div style="font-size:48px; margin-bottom:12px;">✅</div>
+      <div id="cleanupDoneMsg" style="font-size:18px; font-weight:800; color:#374151; margin-bottom:8px;"></div>
+      <div style="font-size:13px; color:#6b7280; margin-bottom:24px;">I deal vuoti sono stati rimossi da Supabase.</div>
+      <button onclick="closeCleanupModal(); loadPipeline();" style="padding:12px 28px; background:#6b5b95; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:700;">✓ Chiudi e ricarica pipeline</button>
     </div>
   </div>
 </div>
