@@ -35,6 +35,7 @@
             background: var(--mida-navy);
             min-height: 100vh;
             overflow-x: hidden;
+            overflow-y: auto;
         }
 
         /* Animated Background */
@@ -80,6 +81,14 @@
         .container.main-active {
             align-items: flex-start;
             padding-top: 24px;
+        }
+
+        /* Login screen: centrato nella viewport senza overflow */
+        .container.login-active {
+            height: 100vh;
+            min-height: unset;
+            overflow: hidden;
+            align-items: center;
         }
 
         /* Login Screen */
@@ -592,7 +601,7 @@
 
     <div class="bg-animation"></div>
 
-    <div class="container">
+    <div class="container login-active">
         <!-- Login Screen -->
         <div id="loginScreen" class="login-screen">
             <div class="login-card">
@@ -807,12 +816,14 @@
         function showLoginScreen() {
             document.getElementById('loginScreen').style.display = 'block';
             document.querySelector('.container').classList.remove('main-active');
+            document.querySelector('.container').classList.add('login-active');
             document.getElementById('mainScreen').classList.remove('active');
         }
 
         function showMainScreen() {
             document.getElementById('loginScreen').style.display = 'none';
             document.querySelector('.container').classList.add('main-active');
+            document.querySelector('.container').classList.remove('login-active');
             document.getElementById('mainScreen').classList.add('active');
         }
 
