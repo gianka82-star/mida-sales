@@ -2004,7 +2004,11 @@
                     division: d.division, stage: d.stage, value: d.value,
                     valueQ1: d.valueQ1, valueQ2: d.valueQ2,
                     valueQ3: d.valueQ3, valueQ4: d.valueQ4,
-                    estimatedDate: d.estimatedDate, owner: d.owner
+                    estimatedDate: d.estimatedDate, owner: d.owner,
+                    ownerPct: d.ownerPct,      // ← fix: necessario per buildOwnerCell
+                    coOwners: d.coOwners || [], // ← fix: necessario per co-account in tabelle e schede
+                    notes: d.notes,
+                    description: d.description
                 });
                 const calcQ = (field) => {
                     const inQ = amDeals.filter(d => (d[field] || 0) > 0);
@@ -2055,6 +2059,7 @@
                 const rows = await loadFromSupabase();
                 buildConsolidatedData(rows);
             allRowsCache = rows;
+            window.allRowsCache = rows; // accessibile da showDealDetail
             updateLostSection(rows);
                 updateAMFilter();
                 updateDashboard();
@@ -3467,7 +3472,27 @@
                 return;
             }
             
-            const deal = window.allOpportunities.find(d => d.id === dealId);
+            // Cerca prima nei raw rows (dati completi con co-owner), poi in allOpportunities
+            const rawDeal = window.allRowsCache && window.allRowsCache.find(r => r.id === dealId);
+            const deal = rawDeal ? {
+                id: rawDeal.id,
+                customer: rawDeal.customer,
+                title: rawDeal.title,
+                division: rawDeal.division,
+                industry: rawDeal.industry,
+                stage: rawDeal.stage,
+                value: rawDeal.value,
+                valueQ1: rawDeal.value_q1 || 0,
+                valueQ2: rawDeal.value_q2 || 0,
+                valueQ3: rawDeal.value_q3 || 0,
+                valueQ4: rawDeal.value_q4 || 0,
+                estimatedDate: rawDeal.estimated_date,
+                owner: rawDeal.owner,
+                ownerPct: rawDeal.owner_pct != null ? rawDeal.owner_pct : 100,
+                coOwners: rawDeal.co_owners || [],
+                notes: rawDeal.notes,
+                description: rawDeal.description
+            } : window.allOpportunities.find(d => d.id === dealId);
             console.log('Deal trovato:', deal);
             
             if (!deal) {
@@ -3809,28 +3834,50 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY_PUSH,
             'Authorization': `Bearer ${SUPABASE_KEY_PUSH}`
           },
           body: JSON.stringify({ amKeys: selectedKeys, title, message })
         });
-        const data = await res.json();
+
         const resultEl = document.getElementById('pushResult');
         resultEl.style.display = 'block';
+
+        let data = {};
+        try { data = await res.json(); } catch(e) { data = {}; }
+
         if (res.ok) {
           resultEl.style.background = '#d1fae5';
           resultEl.style.color = '#065f46';
-          resultEl.textContent = `Notifica inviata a ${data.sent} AM su ${data.total} registrati.`;
+          const sentCount = data.sent ?? 0;
+          const total = data.total ?? selectedKeys.length;
+          const expiredNote = data.expired > 0 ? ` (${data.expired} subscription scadute rimosse)` : '';
+          if (sentCount === 0 && total === 0) {
+            resultEl.style.background = '#fef3c7';
+            resultEl.style.color = '#92400e';
+            resultEl.textContent = '⚠️ Nessun AM ha attivato le notifiche push. Devono aprire la pipeline e accettare i permessi.';
+          } else {
+            resultEl.textContent = `✅ Notifica inviata a ${sentCount} AM su ${total} registrati.${expiredNote}`;
+          }
+        } else if (res.status === 401) {
+          resultEl.style.background = '#fee2e2';
+          resultEl.style.color = '#991b1b';
+          resultEl.innerHTML = '🔒 Errore di autorizzazione (401).<br><small>La Edge Function richiede --no-verify-jwt. Esegui da terminale:<br><code style="background:#fca5a5;padding:2px 6px;border-radius:4px;font-size:11px;">supabase functions deploy send-manual-reminder --no-verify-jwt</code></small>';
         } else {
           resultEl.style.background = '#fee2e2';
           resultEl.style.color = '#991b1b';
-          resultEl.textContent = 'Errore: ' + (data.error || 'sconosciuto');
+          resultEl.textContent = `Errore ${res.status}: ` + (data.error || data.message || 'risposta non valida dalla funzione');
         }
       } catch (err) {
         const resultEl = document.getElementById('pushResult');
         resultEl.style.display = 'block';
         resultEl.style.background = '#fee2e2';
         resultEl.style.color = '#991b1b';
-        resultEl.textContent = 'Errore di rete: ' + err.message;
+        if (err.message?.includes('Failed to fetch') || err.message?.includes('connessione')) {
+          resultEl.textContent = '🌐 Errore di connessione. Verifica la rete o che la Edge Function sia deployata su Supabase.';
+        } else {
+          resultEl.textContent = 'Errore: ' + err.message;
+        }
       } finally {
         btn.disabled = false;
         btn.textContent = 'Invia Notifica';
