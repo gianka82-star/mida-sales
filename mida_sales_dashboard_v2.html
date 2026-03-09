@@ -550,6 +550,70 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
 
+
+        /* ── Owner / Co-owner display in tables ── */
+        .owner-cell { display: flex; flex-direction: column; gap: 4px; }
+        .owner-main {
+            display: flex; align-items: center; gap: 7px;
+        }
+        .owner-avatar {
+            width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--mida-purple), var(--mida-pink));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 10px; letter-spacing: 0;
+        }
+        .owner-avatar.co { background: linear-gradient(135deg, #7b1fa2, #ab47bc); }
+        .owner-name-wrap { display: flex; flex-direction: column; }
+        .owner-name { font-weight: 700; color: #1e293b; font-size: 13px; line-height: 1.2; }
+        .owner-role {
+            font-size: 10px; font-weight: 600; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .owner-pct-badge {
+            display: inline-block; padding: 1px 6px; border-radius: 10px;
+            background: rgba(107,91,149,0.1); color: #6b5b95;
+            font-size: 10px; font-weight: 700; margin-left: 4px;
+        }
+        .owner-pct-badge.co { background: rgba(123,31,162,0.1); color: #7b1fa2; }
+        .coowner-row {
+            display: flex; align-items: center; gap: 7px;
+            padding: 3px 6px 3px 2px;
+            background: rgba(123,31,162,0.04);
+            border-radius: 6px;
+            border-left: 2px solid rgba(123,31,162,0.2);
+        }
+
+        /* ── Paginazione pipeline table ── */
+        .pagination-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 0 4px;
+            flex-wrap: wrap; gap: 8px;
+        }
+        .pagination-info {
+            font-size: 13px; color: #6b7280; font-weight: 500;
+        }
+        .pagination-info strong { color: #374151; }
+        .pagination-controls { display: flex; align-items: center; gap: 6px; }
+        .page-size-select {
+            padding: 5px 10px; border: 1.5px solid #e5e7eb; border-radius: 7px;
+            font-size: 13px; font-family: inherit; color: #374151; background: white;
+            cursor: pointer;
+        }
+        .page-btn {
+            padding: 6px 14px; border: 1.5px solid #e5e7eb; border-radius: 7px;
+            background: white; font-size: 13px; font-weight: 600; color: #374151;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--mida-purple); color: var(--mida-purple);
+            background: rgba(107,91,149,0.05);
+        }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .page-btn.active {
+            background: var(--mida-purple); color: white; border-color: var(--mida-purple);
+        }
+        .page-numbers { display: flex; gap: 4px; }
+
         /* Search input styling */
         #searchPipeline:focus,
         #searchQuarter:focus {
@@ -1524,11 +1588,17 @@
                         📋 Top Opportunità in Pipeline
                     </div>
                     
-                    <!-- Search Box -->
-                    <div style="margin-bottom: 16px;">
+                    <!-- Search Box + paginazione top -->
+                    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
                         <input type="text" id="searchPipeline" placeholder="🔍 Cerca per cliente, progetto, business unit, owner..." 
                                oninput="filterPipelineTable()" 
-                               style="width: 100%; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                               style="flex:1; min-width:220px; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                        <select class="page-size-select" id="pipelinePageSize" onchange="pipelinePage=1; renderPipelineTable();">
+                            <option value="25">25 per pagina</option>
+                            <option value="50">50 per pagina</option>
+                            <option value="100">100 per pagina</option>
+                            <option value="9999">Tutte</option>
+                        </select>
                     </div>
                     
                     <div class="pipeline-table-container">
@@ -1566,6 +1636,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <div class="pagination-bar" id="pipelinePaginationBar"></div>
                     </div>
                 </div>
             </div>
@@ -1649,11 +1720,17 @@
                         📋 Dettaglio Opportunità per Quarter
                     </div>
                     
-                    <!-- Search Box -->
-                    <div style="margin-bottom: 16px;">
-                        <input type="text" id="searchQuarter" placeholder="🔍 Cerca per cliente, titolo, stage..." 
+                    <!-- Search Box + page size -->
+                    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+                        <input type="text" id="searchQuarter" placeholder="🔍 Cerca per cliente, titolo, stage, owner..." 
                                oninput="filterQuarterTable()" 
-                               style="width: 100%; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                               style="flex:1; min-width:220px; padding: 12px 16px; border: 2px solid var(--mida-light-gray); border-radius: 8px; font-size: 14px; transition: all 0.3s;">
+                        <select class="page-size-select" id="quarterPageSize" onchange="quarterPage=1; renderQuarterTable();">
+                            <option value="25">25 per pagina</option>
+                            <option value="50">50 per pagina</option>
+                            <option value="100">100 per pagina</option>
+                            <option value="9999">Tutte</option>
+                        </select>
                     </div>
                     
                     <div class="pipeline-table-container">
@@ -1695,6 +1772,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <div class="pagination-bar" id="quarterPaginationBar"></div>
                     </div>
                 </div>
             </div>
@@ -2554,113 +2632,55 @@
             });
         }
 
-        // Update pipeline table
-        // Filter pipeline table
+        // Filter pipeline table — data-driven
+        let pipelineSearchTerm = '';
         function filterPipelineTable() {
-            const searchTerm = document.getElementById('searchPipeline').value.toLowerCase().trim();
-            const tbody = document.getElementById('pipelineTableBody');
-            const rows = tbody.getElementsByTagName('tr');
-            
-            let visibleCount = 0;
-            
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                
-                // Skip empty state row
-                if (row.cells.length === 1) continue;
-                
-                // Get text from all cells
-                const customer = row.cells[0]?.textContent.toLowerCase() || '';
-                const division = row.cells[1]?.textContent.toLowerCase() || '';
-                const value = row.cells[2]?.textContent.toLowerCase() || '';
-                const stage = row.cells[3]?.textContent.toLowerCase() || '';
-                const date = row.cells[5]?.textContent.toLowerCase() || '';
-                const owner = row.cells[6]?.textContent.toLowerCase() || '';
-                
-                const allText = customer + ' ' + division + ' ' + value + ' ' + stage + ' ' + date + ' ' + owner;
-                
-                if (allText.includes(searchTerm)) {
-                    row.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    row.classList.add('hidden');
-                }
-            }
-            
-            // Show "no results" message if needed
-            if (visibleCount === 0 && searchTerm !== '') {
-                if (!tbody.querySelector('.no-results')) {
-                    const noResults = document.createElement('tr');
-                    noResults.className = 'no-results';
-                    noResults.innerHTML = '<td colspan="7" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessun risultato trovato per "' + searchTerm + '"</td>';
-                    tbody.appendChild(noResults);
-                }
-            } else {
-                const noResults = tbody.querySelector('.no-results');
-                if (noResults) noResults.remove();
-            }
+            pipelineSearchTerm = document.getElementById('searchPipeline').value.toLowerCase().trim();
+            pipelinePage = 1;
+            renderPipelineTable();
         }
 
-        // Filter quarter table
+        // Filter quarter table — data-driven, ripristina paginazione
+        let quarterSearchTerm = '';
         function filterQuarterTable() {
-            const searchTerm = document.getElementById('searchQuarter').value.toLowerCase().trim();
-            const tbody = document.getElementById('quarterTableBody');
-            const rows = tbody.getElementsByTagName('tr');
-            
-            let visibleCount = 0;
-            
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                
-                // Skip empty state row
-                if (row.cells.length === 1) continue;
-                
-                // Get text from first 3 columns (Cliente, Titolo, Stage)
-                const customer = row.cells[0]?.textContent.toLowerCase() || '';
-                const title = row.cells[1]?.textContent.toLowerCase() || '';
-                const stage = row.cells[2]?.textContent.toLowerCase() || '';
-                
-                const allText = customer + ' ' + title + ' ' + stage;
-                
-                if (allText.includes(searchTerm)) {
-                    row.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    row.classList.add('hidden');
-                }
-            }
-            
-            // Show "no results" message if needed
-            if (visibleCount === 0 && searchTerm !== '') {
-                if (!tbody.querySelector('.no-results')) {
-                    const noResults = document.createElement('tr');
-                    noResults.className = 'no-results';
-                    noResults.innerHTML = '<td colspan="8" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessun risultato trovato per "' + searchTerm + '"</td>';
-                    tbody.appendChild(noResults);
-                }
-            } else {
-                const noResults = tbody.querySelector('.no-results');
-                if (noResults) noResults.remove();
-            }
+            quarterSearchTerm = document.getElementById('searchQuarter').value.toLowerCase().trim();
+            quarterPage = 1;
+            renderQuarterTable();
+        }
+
+        // ── Helper: initials da nome completo ──
+        function getInitials(fullName) {
+            return fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
         }
 
         // ── Helper: genera HTML cella owner + co-owner per tabelle ──
         function buildOwnerCell(deal) {
-            let html = `<div style="font-weight:600; color:#374151; font-size:13px;">${formatAMName(deal.owner)}</div>`;
-            if (deal.ownerPct != null && deal.ownerPct < 100) {
-                html += `<div style="font-size:11px; color:#9ca3af; margin-top:1px;">(${deal.ownerPct}%)</div>`;
-            }
-            if (deal.coOwners && deal.coOwners.length > 0) {
+            const ownerName = formatAMName(deal.owner);
+            const ownerPct  = (deal.ownerPct != null && deal.ownerPct < 100) ? deal.ownerPct : null;
+            const hasCoOwners = deal.coOwners && deal.coOwners.length > 0;
+
+            let h = `<div class="owner-cell">
+                <div class="owner-main">
+                    <div class="owner-avatar">${getInitials(ownerName)}</div>
+                    <div class="owner-name-wrap">
+                        <span class="owner-name">${ownerName}</span>
+                        <span class="owner-role">Owner${ownerPct ? ` <span class="owner-pct-badge">${ownerPct}%</span>` : ''}</span>
+                    </div>
+                </div>`;
+            if (hasCoOwners) {
                 deal.coOwners.forEach(co => {
-                    html += `<div style="margin-top:3px; font-size:12px; color:#7b1fa2; display:flex; align-items:center; gap:3px;">
-                        🤝 <span style="font-weight:600;">${formatAMName(co.name)}</span>`;
-                    if (co.pct != null) {
-                        html += `<span style="color:#9ca3af; font-size:11px;">(${co.pct}%)</span>`;
-                    }
-                    html += `</div>`;
+                    const coName = formatAMName(co.name);
+                    h += `<div class="coowner-row">
+                        <div class="owner-avatar co">${getInitials(coName)}</div>
+                        <div class="owner-name-wrap">
+                            <span class="owner-name" style="color:#4a148c;">${coName}</span>
+                            <span class="owner-role" style="color:#9c27b0;">Co-owner${co.pct != null ? ` <span class="owner-pct-badge co">${co.pct}%</span>` : ''}</span>
+                        </div>
+                    </div>`;
                 });
             }
-            return html;
+            h += `</div>`;
+            return h;
         }
 
         function updatePipelineTable(deals) {
@@ -2669,78 +2689,147 @@
             renderPipelineTable();
         }
         
-        function renderPipelineTable() {
-            const deals = window.pipelineDeals || [];
-            const tbody = document.getElementById('pipelineTableBody');
-            tbody.innerHTML = '';
-            
-            if (deals.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità trovata con i filtri selezionati</td></tr>';
-                return;
-            }
-            
-            // Copia array per non modificare originale
-            let sortedDeals = [...deals];
-            
-            // Applica sorting se attivo
+        // ── Stato paginazione pipeline ──
+        let pipelinePage = 1;
+
+        function getPipelinePageSize() {
+            const sel = document.getElementById('pipelinePageSize');
+            return sel ? parseInt(sel.value) : 25;
+        }
+
+        function sortPipelineDeals(deals) {
+            let sorted = [...deals];
             if (pipelineSortColumn) {
-                sortedDeals.sort((a, b) => {
+                sorted.sort((a, b) => {
                     let valA, valB;
-                    
                     switch(pipelineSortColumn) {
                         case 'customer':
-                            valA = a.customer.toLowerCase();
-                            valB = b.customer.toLowerCase();
+                            valA = (a.customer||'').toLowerCase(); valB = (b.customer||'').toLowerCase();
                             return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                        
                         case 'division':
-                            valA = a.division.toLowerCase();
-                            valB = b.division.toLowerCase();
+                            valA = (a.division||'').toLowerCase(); valB = (b.division||'').toLowerCase();
                             return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                        
                         case 'value':
                             return pipelineSortDirection === 'asc' ? a.value - b.value : b.value - a.value;
-                        
                         case 'stage':
                             const stageOrder = { 'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3, 'won': 4 };
-                            return pipelineSortDirection === 'asc' ? 
-                                stageOrder[a.stage] - stageOrder[b.stage] : 
+                            return pipelineSortDirection === 'asc' ?
+                                stageOrder[a.stage] - stageOrder[b.stage] :
                                 stageOrder[b.stage] - stageOrder[a.stage];
-                        
                         case 'probability':
                             const probA = STAGE_CONFIG[a.stage].probability;
                             const probB = STAGE_CONFIG[b.stage].probability;
                             return pipelineSortDirection === 'asc' ? probA - probB : probB - probA;
-                        
                         case 'date':
                             valA = a.estimatedDate ? new Date(a.estimatedDate).getTime() : 0;
                             valB = b.estimatedDate ? new Date(b.estimatedDate).getTime() : 0;
                             return pipelineSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
                         case 'owner':
-                            valA = a.owner.toLowerCase();
-                            valB = b.owner.toLowerCase();
+                            valA = (a.owner||'').toLowerCase(); valB = (b.owner||'').toLowerCase();
                             return pipelineSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                        
-                        default:
-                            return 0;
+                        default: return 0;
                     }
                 });
             } else {
-                // Default: sort by value descending
-                sortedDeals.sort((a, b) => b.value - a.value);
+                sorted.sort((a, b) => b.value - a.value);
             }
-            
-            // Top 20
-            const topDeals = sortedDeals.slice(0, 20);
-            
-            topDeals.forEach(deal => {
-                const estimatedDate = deal.estimatedDate ? new Date(deal.estimatedDate).toLocaleDateString('it-IT') : 'Non definita';
-                const prob = STAGE_CONFIG[deal.stage].probability;
-                
-                // Co-owners badge
+            return sorted;
+        }
 
-                
+        function renderPipelinePagination(total, pageSize, currentPage) {
+            const bar = document.getElementById('pipelinePaginationBar');
+            if (!bar) return;
+            const totalPages = Math.ceil(total / pageSize);
+            if (total === 0 || pageSize >= 9999) { bar.innerHTML = ''; return; }
+
+            const from = (currentPage - 1) * pageSize + 1;
+            const to   = Math.min(currentPage * pageSize, total);
+
+            // Calcola pagine da mostrare (max 5 numeri)
+            let pages = [];
+            if (totalPages <= 7) {
+                pages = Array.from({length: totalPages}, (_, i) => i + 1);
+            } else {
+                pages = [1];
+                if (currentPage > 3) pages.push('…');
+                for (let i = Math.max(2, currentPage-1); i <= Math.min(totalPages-1, currentPage+1); i++) pages.push(i);
+                if (currentPage < totalPages - 2) pages.push('…');
+                pages.push(totalPages);
+            }
+
+            bar.innerHTML = `
+                <div class="pagination-info">
+                    Mostrando <strong>${from}–${to}</strong> di <strong>${total}</strong> opportunità
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="goToPipelinePage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prec</button>
+                    <div class="page-numbers">
+                        ${pages.map(p => p === '…'
+                            ? `<span style="padding:6px 4px; color:#9ca3af;">…</span>`
+                            : `<button class="page-btn${p===currentPage?' active':''}" onclick="goToPipelinePage(${p})">${p}</button>`
+                        ).join('')}
+                    </div>
+                    <button class="page-btn" onclick="goToPipelinePage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Succ ›</button>
+                </div>`;
+        }
+
+        function goToPipelinePage(page) {
+            const deals = window.pipelineDeals || [];
+            const pageSize = getPipelinePageSize();
+            const total = deals.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            pipelinePage = Math.max(1, Math.min(page, totalPages));
+            renderPipelineTable();
+            // Scroll to top of table
+            const el = document.querySelector('.pipeline-table-container');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function renderPipelineTable() {
+            let deals = window.pipelineDeals || [];
+            const tbody = document.getElementById('pipelineTableBody');
+            tbody.innerHTML = '';
+
+            // Filtra per ricerca testuale
+            const search = (pipelineSearchTerm || '').toLowerCase().trim();
+            if (search) {
+                deals = deals.filter(d => {
+                    const ownerStr = formatAMName(d.owner).toLowerCase();
+                    const coStr = (d.coOwners||[]).map(c => formatAMName(c.name).toLowerCase()).join(' ');
+                    return (
+                        (d.customer||'').toLowerCase().includes(search) ||
+                        (d.title||'').toLowerCase().includes(search) ||
+                        (d.division||'').toLowerCase().includes(search) ||
+                        (d.stage||'').toLowerCase().includes(search) ||
+                        ownerStr.includes(search) ||
+                        coStr.includes(search)
+                    );
+                });
+            }
+
+            if (deals.length === 0) {
+                tbody.innerHTML = search
+                    ? `<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--mida-gray);">Nessun risultato per "${search}"</td></tr>`
+                    : '<tr><td colspan="7" style="text-align:center; padding:40px; color:var(--mida-gray);">Nessuna opportunità trovata con i filtri selezionati</td></tr>';
+                renderPipelinePagination(0, 25, 1);
+                return;
+            }
+
+            const sortedDeals = sortPipelineDeals(deals);
+            const pageSize    = getPipelinePageSize();
+            const total       = sortedDeals.length;
+            const totalPages  = Math.max(1, Math.ceil(total / pageSize));
+
+            // Clamp page
+            if (pipelinePage > totalPages) pipelinePage = totalPages;
+
+            const start    = (pipelinePage - 1) * pageSize;
+            const paginated = pageSize >= 9999 ? sortedDeals : sortedDeals.slice(start, start + pageSize);
+
+            paginated.forEach(deal => {
+                const estimatedDate = deal.estimatedDate ? new Date(deal.estimatedDate).toLocaleDateString('it-IT') : '–';
+                const prob = STAGE_CONFIG[deal.stage].probability;
+
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
                 row.onclick = () => showDealDetail(deal.id);
@@ -2754,9 +2843,7 @@
                     <td><span class="status-badge status-${deal.stage}">${STAGE_CONFIG[deal.stage].label}</span></td>
                     <td>
                         <div class="probability-indicator">
-                            <div class="probability-bar">
-                                <div class="probability-fill" style="width: ${prob}%;"></div>
-                            </div>
+                            <div class="probability-bar"><div class="probability-fill" style="width:${prob}%;"></div></div>
                             <div class="probability-text">${prob}%</div>
                         </div>
                     </td>
@@ -2765,6 +2852,8 @@
                 `;
                 tbody.appendChild(row);
             });
+
+            renderPipelinePagination(total, pageSize, pipelinePage);
         }
         
         function getAMInitials(amName) {
@@ -2826,109 +2915,155 @@
         }
 
         // Update quarter table
+        // ── Stato paginazione quarter ──
+        let quarterPage = 1;
+
+        function getQuarterPageSize() {
+            const sel = document.getElementById('quarterPageSize');
+            return sel ? parseInt(sel.value) : 25;
+        }
+
+        function renderQuarterPagination(total, pageSize, currentPage) {
+            const bar = document.getElementById('quarterPaginationBar');
+            if (!bar) return;
+            const totalPages = Math.ceil(total / pageSize);
+            if (total === 0 || pageSize >= 9999) { bar.innerHTML = ''; return; }
+
+            const from = (currentPage - 1) * pageSize + 1;
+            const to   = Math.min(currentPage * pageSize, total);
+
+            let pages = [];
+            if (totalPages <= 7) {
+                pages = Array.from({length: totalPages}, (_, i) => i + 1);
+            } else {
+                pages = [1];
+                if (currentPage > 3) pages.push('…');
+                for (let i = Math.max(2, currentPage-1); i <= Math.min(totalPages-1, currentPage+1); i++) pages.push(i);
+                if (currentPage < totalPages - 2) pages.push('…');
+                pages.push(totalPages);
+            }
+
+            bar.innerHTML = `
+                <div class="pagination-info">
+                    Mostrando <strong>${from}–${to}</strong> di <strong>${total}</strong> opportunità
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="goToQuarterPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prec</button>
+                    <div class="page-numbers">
+                        ${pages.map(p => p === '…'
+                            ? `<span style="padding:6px 4px; color:#9ca3af;">…</span>`
+                            : `<button class="page-btn${p===currentPage?' active':''}" onclick="goToQuarterPage(${p})">${p}</button>`
+                        ).join('')}
+                    </div>
+                    <button class="page-btn" onclick="goToQuarterPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Succ ›</button>
+                </div>`;
+        }
+
+        function goToQuarterPage(page) {
+            const pageSize   = getQuarterPageSize();
+            const base       = (allOpportunities || []).filter(d =>
+                (d.valueQ1||0)+(d.valueQ2||0)+(d.valueQ3||0)+(d.valueQ4||0) > 0
+            );
+            const totalPages = Math.max(1, Math.ceil(base.length / pageSize));
+            quarterPage = Math.max(1, Math.min(page, totalPages));
+            renderQuarterTable();
+            const el = document.querySelector('#tab-quarters .pipeline-table-container');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
         function renderQuarterTable() {
             const tbody = document.getElementById('quarterTableBody');
             tbody.innerHTML = '';
-            
-            const dealsWithQuarters = allOpportunities.filter(d => 
-                (d.valueQ1 || 0) + (d.valueQ2 || 0) + (d.valueQ3 || 0) + (d.valueQ4 || 0) > 0
+
+            // Base: solo deal con almeno un valore quarter
+            let deals = (allOpportunities || []).filter(d =>
+                (d.valueQ1||0)+(d.valueQ2||0)+(d.valueQ3||0)+(d.valueQ4||0) > 0
             );
-            
-            if (dealsWithQuarters.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: var(--mida-gray);">Nessuna opportunità con distribuzione quarter</td></tr>';
+
+            // Applica ricerca testuale (su cliente, titolo, stage, owner)
+            const search = (quarterSearchTerm || '').toLowerCase().trim();
+            if (search) {
+                deals = deals.filter(d => {
+                    const ownerStr = formatAMName(d.owner).toLowerCase();
+                    const coStr = (d.coOwners||[]).map(c => formatAMName(c.name).toLowerCase()).join(' ');
+                    return (
+                        (d.customer||'').toLowerCase().includes(search) ||
+                        (d.title||'').toLowerCase().includes(search) ||
+                        (d.stage||'').toLowerCase().includes(search) ||
+                        ownerStr.includes(search) ||
+                        coStr.includes(search)
+                    );
+                });
+            }
+
+            if (deals.length === 0) {
+                tbody.innerHTML = search
+                    ? `<tr><td colspan="9" style="text-align:center; padding:40px; color:var(--mida-gray);">Nessun risultato per "${search}"</td></tr>`
+                    : '<tr><td colspan="9" style="text-align:center; padding:40px; color:var(--mida-gray);">Nessuna opportunità con distribuzione quarter</td></tr>';
+                renderQuarterPagination(0, 25, 1);
                 return;
             }
-            
-            // Copia e sort
-            let sortedDeals = [...dealsWithQuarters];
-            
+
+            // Sort
             if (quarterSortColumn) {
-                sortedDeals.sort((a, b) => {
-                    const prob = quarterViewFilter === 'weighted' ? STAGE_CONFIG[a.stage].probability / 100 : 1;
+                deals.sort((a, b) => {
+                    const probA = quarterViewFilter === 'weighted' ? STAGE_CONFIG[a.stage].probability / 100 : 1;
                     const probB = quarterViewFilter === 'weighted' ? STAGE_CONFIG[b.stage].probability / 100 : 1;
-                    
                     let valA, valB;
-                    
                     switch(quarterSortColumn) {
-                        case 'customer':
-                            return quarterSortDirection === 'asc' ? 
-                                a.customer.localeCompare(b.customer) : 
-                                b.customer.localeCompare(a.customer);
-                        
-                        case 'title':
-                            return quarterSortDirection === 'asc' ? 
-                                a.title.localeCompare(b.title) : 
-                                b.title.localeCompare(a.title);
-                        
+                        case 'customer': return quarterSortDirection === 'asc' ? a.customer.localeCompare(b.customer) : b.customer.localeCompare(a.customer);
+                        case 'title':    return quarterSortDirection === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
                         case 'stage':
-                            const stageOrder = { 'v0': 0, 'v1': 1, 'v2': 2, 'v3': 3, 'won': 4 };
-                            return quarterSortDirection === 'asc' ? 
-                                stageOrder[a.stage] - stageOrder[b.stage] : 
-                                stageOrder[b.stage] - stageOrder[a.stage];
-                        
-                        case 'q1':
-                            valA = (a.valueQ1 || 0) * prob;
-                            valB = (b.valueQ1 || 0) * probB;
-                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
-                        case 'q2':
-                            valA = (a.valueQ2 || 0) * prob;
-                            valB = (b.valueQ2 || 0) * probB;
-                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
-                        case 'q3':
-                            valA = (a.valueQ3 || 0) * prob;
-                            valB = (b.valueQ3 || 0) * probB;
-                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
-                        case 'q4':
-                            valA = (a.valueQ4 || 0) * prob;
-                            valB = (b.valueQ4 || 0) * probB;
-                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
+                            const so = { 'v0':0,'v1':1,'v2':2,'v3':3,'won':4 };
+                            return quarterSortDirection === 'asc' ? so[a.stage]-so[b.stage] : so[b.stage]-so[a.stage];
+                        case 'q1': valA=(a.valueQ1||0)*probA; valB=(b.valueQ1||0)*probB; return quarterSortDirection==='asc'?valA-valB:valB-valA;
+                        case 'q2': valA=(a.valueQ2||0)*probA; valB=(b.valueQ2||0)*probB; return quarterSortDirection==='asc'?valA-valB:valB-valA;
+                        case 'q3': valA=(a.valueQ3||0)*probA; valB=(b.valueQ3||0)*probB; return quarterSortDirection==='asc'?valA-valB:valB-valA;
+                        case 'q4': valA=(a.valueQ4||0)*probA; valB=(b.valueQ4||0)*probB; return quarterSortDirection==='asc'?valA-valB:valB-valA;
                         case 'total':
-                            valA = ((a.valueQ1 || 0) + (a.valueQ2 || 0) + (a.valueQ3 || 0) + (a.valueQ4 || 0)) * prob;
-                            valB = ((b.valueQ1 || 0) + (b.valueQ2 || 0) + (b.valueQ3 || 0) + (b.valueQ4 || 0)) * probB;
-                            return quarterSortDirection === 'asc' ? valA - valB : valB - valA;
-                        
-                        default:
-                            return 0;
+                            valA=((a.valueQ1||0)+(a.valueQ2||0)+(a.valueQ3||0)+(a.valueQ4||0))*probA;
+                            valB=((b.valueQ1||0)+(b.valueQ2||0)+(b.valueQ3||0)+(b.valueQ4||0))*probB;
+                            return quarterSortDirection==='asc'?valA-valB:valB-valA;
+                        default: return 0;
                     }
                 });
             }
-            
-            sortedDeals.forEach(deal => {
+
+            // Paginazione
+            const pageSize   = getQuarterPageSize();
+            const total      = deals.length;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            if (quarterPage > totalPages) quarterPage = totalPages;
+
+            const start    = (quarterPage - 1) * pageSize;
+            const paginated = pageSize >= 9999 ? deals : deals.slice(start, start + pageSize);
+
+            paginated.forEach(deal => {
                 const prob = quarterViewFilter === 'weighted' ? STAGE_CONFIG[deal.stage].probability / 100 : 1;
-                
-                const q1Val = (deal.valueQ1 || 0) * prob;
-                const q2Val = (deal.valueQ2 || 0) * prob;
-                const q3Val = (deal.valueQ3 || 0) * prob;
-                const q4Val = (deal.valueQ4 || 0) * prob;
-                const total = q1Val + q2Val + q3Val + q4Val;
-                
-                const q1Display = q1Val > 0 ? '€ ' + Math.round(q1Val).toLocaleString('it-IT') : '-';
-                const q2Display = q2Val > 0 ? '€ ' + Math.round(q2Val).toLocaleString('it-IT') : '-';
-                const q3Display = q3Val > 0 ? '€ ' + Math.round(q3Val).toLocaleString('it-IT') : '-';
-                const q4Display = q4Val > 0 ? '€ ' + Math.round(q4Val).toLocaleString('it-IT') : '-';
-                const totalDisplay = '€ ' + Math.round(total).toLocaleString('it-IT');
-                
+                const q1Val = (deal.valueQ1||0)*prob, q2Val = (deal.valueQ2||0)*prob;
+                const q3Val = (deal.valueQ3||0)*prob, q4Val = (deal.valueQ4||0)*prob;
+                const tot   = q1Val+q2Val+q3Val+q4Val;
+
+                const fmt = v => v > 0 ? '€ '+Math.round(v).toLocaleString('it-IT') : '-';
+
                 const row = document.createElement('tr');
                 row.style.cursor = 'pointer';
                 row.onclick = () => showDealDetail(deal.id);
-                const ownerCellQ = buildOwnerCell(deal);
                 row.innerHTML = `
                     <td><strong>${deal.customer}</strong></td>
                     <td>${deal.title}</td>
                     <td><span class="status-badge status-${deal.stage}">${STAGE_CONFIG[deal.stage].label}</span></td>
-                    <td style="font-weight: 600;">${q1Display}</td>
-                    <td style="font-weight: 600;">${q2Display}</td>
-                    <td style="font-weight: 600;">${q3Display}</td>
-                    <td style="font-weight: 600;">${q4Display}</td>
-                    <td style="font-weight: 700; color: var(--mida-orange);">${totalDisplay}</td>
-                    <td>${ownerCellQ}</td>
+                    <td style="font-weight:600;">${fmt(q1Val)}</td>
+                    <td style="font-weight:600;">${fmt(q2Val)}</td>
+                    <td style="font-weight:600;">${fmt(q3Val)}</td>
+                    <td style="font-weight:600;">${fmt(q4Val)}</td>
+                    <td style="font-weight:700; color:var(--mida-orange);">${fmt(tot)}</td>
+                    <td>${buildOwnerCell(deal)}</td>
                 `;
                 tbody.appendChild(row);
             });
+
+            renderQuarterPagination(total, pageSize, quarterPage);
         }
         
         function updateQuarterTable(deals) {
@@ -3280,6 +3415,7 @@
         let quarterSortDirection = 'asc';
         
         function sortPipelineTable(column) {
+            pipelinePage = 1; // reset pagina su cambio sort
             if (pipelineSortColumn === column) {
                 pipelineSortDirection = pipelineSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
@@ -3292,13 +3428,13 @@
         }
         
         function sortQuarterTable(column) {
+            quarterPage = 1;
             if (quarterSortColumn === column) {
                 quarterSortDirection = quarterSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
                 quarterSortColumn = column;
                 quarterSortDirection = 'asc';
             }
-            
             updateSortIndicators('quarter', column, quarterSortDirection);
             renderQuarterTable();
         }
