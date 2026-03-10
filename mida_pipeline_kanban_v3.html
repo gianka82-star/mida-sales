@@ -1951,6 +1951,8 @@
             document.getElementById('currentAM').value = value;
             currentAM = value;
             currentAMName = displayName;
+            // Memorizza l'AM visualizzato per resistere ai reload
+            try { sessionStorage.setItem('midaViewingAM', JSON.stringify({amKey: value, amName: displayName})); } catch(e) {}
             loadPipeline();
         }
 
@@ -1967,6 +1969,8 @@
             document.getElementById('currentAM').value = value;
             currentAM = value;
             currentAMName = displayName;
+            // Memorizza l'AM visualizzato per resistere ai reload
+            try { sessionStorage.setItem('midaViewingAM', JSON.stringify({amKey: value, amName: displayName})); } catch(e) {}
             loadPipeline();
         }
 
@@ -2134,6 +2138,84 @@
             }
         }
 
+
+        // ── Modal READ-ONLY per co-owner ──
+        function _openReadOnlyModal(deal) {
+            const modal = document.getElementById('dealModal');
+
+            // Popola i campi normalmente (read-only)
+            document.getElementById('modalTitle').textContent = 'Dettaglio Opportunità';
+            document.getElementById('dealCustomer').value = deal.customer;
+            document.getElementById('dealTitle').value = deal.title;
+            document.getElementById('dealDescription').value = deal.description || '';
+            document.getElementById('dealDivision').value = deal.division;
+            document.getElementById('dealIndustry').value = deal.industry || '';
+            document.getElementById('dealCoAccounting').value = deal.coAccounting || 'no';
+            document.getElementById('dealValue').value = deal.value.toLocaleString('it-IT');
+            document.getElementById('dealValueQ1').value = (deal.valueQ1 || 0) > 0 ? deal.valueQ1.toLocaleString('it-IT') : '';
+            document.getElementById('dealValueQ2').value = (deal.valueQ2 || 0) > 0 ? deal.valueQ2.toLocaleString('it-IT') : '';
+            document.getElementById('dealValueQ3').value = (deal.valueQ3 || 0) > 0 ? deal.valueQ3.toLocaleString('it-IT') : '';
+            document.getElementById('dealValueQ4').value = (deal.valueQ4 || 0) > 0 ? deal.valueQ4.toLocaleString('it-IT') : '';
+            document.getElementById('dealDate').value = deal.estimatedDate || '';
+            document.getElementById('dealStage').value = deal.stage;
+            document.getElementById('dealNotes').value = deal.notes || '';
+            updateQuarterTotal();
+
+            // Co-owner info
+            if (deal.coAccounting === 'yes' && deal.coOwners && deal.coOwners.length > 0) {
+                toggleCoAccountingAM();
+                const amSelect = document.getElementById('dealCoAccountingAMs');
+                Array.from(amSelect.options).forEach(opt => {
+                    opt.selected = deal.coOwners.some(co => co.name === opt.value);
+                });
+                const ownerPctEl = document.getElementById('ownerPct');
+                if (ownerPctEl) ownerPctEl.value = deal.ownerPct != null ? deal.ownerPct : 100;
+                buildCoOwnerPctRows();
+                deal.coOwners.forEach(co => {
+                    const inp = document.getElementById('pct_' + co.name);
+                    if (inp && co.pct != null) inp.value = co.pct;
+                });
+                updatePctTotal();
+            }
+
+            // Disabilita tutti gli input e select del form
+            const form = document.getElementById('dealForm');
+            Array.from(form.querySelectorAll('input, select, textarea, button[type="submit"]')).forEach(el => {
+                el.disabled = true;
+            });
+
+            // Mostra banner informativo (rimuovi eventuale precedente)
+            const existingBanner = document.getElementById('roBanner');
+            if (existingBanner) existingBanner.remove();
+
+            const ownerName = AM_NAMES_MAP[deal.owner] || deal.owner;
+            const myCoData = deal.coOwners && deal.coOwners.find(co => co.name === currentAM);
+            const myPct = myCoData ? myCoData.pct : null;
+            const pctInfo = myPct != null ? ` · La tua quota: <strong>${myPct}%</strong>` : '';
+
+            const banner = document.createElement('div');
+            banner.id = 'roBanner';
+            banner.style.cssText = `
+                background: linear-gradient(135deg, #e8f4fd, #bee3f8);
+                border: 1.5px solid #90cdf4;
+                border-radius: 10px;
+                padding: 12px 16px;
+                margin-bottom: 16px;
+                font-size: 13px;
+                color: #1a56db;
+                line-height: 1.5;
+            `;
+            banner.innerHTML = `
+                <strong>👁 Vista sola lettura</strong><br>
+                Sei co-owner di questa opportunità. Solo <strong>${ownerName}</strong> può modificarla.${pctInfo}
+            `;
+            form.insertBefore(banner, form.firstChild);
+
+            // Ripulisci al chiudi
+            modal._readOnly = true;
+            modal.classList.add('active');
+        }
+
         // Open deal modal
         function openDealModal(stage = 'v0', dealId = null) {
             const modal = document.getElementById('dealModal');
@@ -2145,6 +2227,14 @@
             if (dealId) {
                 const deal = deals.find(d => d.id === dealId);
                 if (deal) {
+                    // ── GUARD: co-owner non può modificare deal altrui ──
+                    const isOwner = deal.owner === currentAM;
+                    const isCoOwner = deal.coOwners && deal.coOwners.some(co => co.name === currentAM);
+                    if (!isOwner && isCoOwner) {
+                        // Mostra banner read-only e disabilita il form
+                        _openReadOnlyModal(deal);
+                        return;
+                    }
                     document.getElementById('modalTitle').textContent = 'Modifica Opportunità';
                     document.getElementById('dealCustomer').value = deal.customer;
                     document.getElementById('dealTitle').value = deal.title;
@@ -2203,8 +2293,20 @@
 
         // Close deal modal
         function closeDealModal() {
-            document.getElementById('dealModal').classList.remove('active');
+            const modal = document.getElementById('dealModal');
+            modal.classList.remove('active');
             editingDealId = null;
+
+            // Ripristina campi se era read-only
+            if (modal._readOnly) {
+                modal._readOnly = false;
+                const form = document.getElementById('dealForm');
+                Array.from(form.querySelectorAll('input, select, textarea, button[type="submit"]')).forEach(el => {
+                    el.disabled = false;
+                });
+                const banner = document.getElementById('roBanner');
+                if (banner) banner.remove();
+            }
         }
 
         // ========================================
@@ -2658,6 +2760,16 @@
         async function saveDeal(event) {
             event.preventDefault();
             
+            // ── GUARD: verifica che il deal in modifica appartenga a currentAM ──
+            if (editingDealId) {
+                const existingDeal = deals.find(d => d.id === editingDealId);
+                if (existingDeal && existingDeal.owner !== currentAM) {
+                    alert('⚠️ Non puoi modificare questa opportunità.\n\nSolo il proprietario principale può apportare modifiche.');
+                    closeDealModal();
+                    return;
+                }
+            }
+
             // ========================================
             // VALIDAZIONE 0: Account Manager selezionato
             // ========================================
@@ -3436,9 +3548,9 @@
                                 display: inline-flex;
                                 align-items: center;
                                 gap: 4px;
-                            " title="Owner principale: ${ownerFullName}">
+                            " title="Owner principale: ${ownerFullName} — Sei co-owner di questa opportunità">
                                 <span>👤</span>
-                                <span>Owner: ${ownerInitials}${myPctLabel}${otherLabel}</span>
+                                <span>Proposto da ${ownerInitials}${myPctLabel}${otherLabel}</span>
                             </span>
                         </div>
                     `;
@@ -3906,6 +4018,12 @@
                         const newStage = this.dataset.stage;
                         const deal = deals.find(d => d.id === dealId);
                         if (deal && deal.stage !== newStage) {
+                            // Guard: solo il proprietario può spostare il deal
+                            if (deal.owner !== currentAM) {
+                                showSaveIndicator('⚠️ Solo il proprietario può spostare questo deal');
+                                renderKanban(); // ripristina posizione visiva
+                                return;
+                            }
                             const oldStage = deal.stage;
                             deal.previousStage = oldStage;
                             deal.stage = newStage;
@@ -3999,6 +4117,13 @@
                     const newStage = container.dataset.stage;
                     const deal = deals.find(d => d.id === dealId);
                     if (deal && deal.stage !== newStage) {
+                        // Guard: solo il proprietario può spostare il deal
+                        if (deal.owner !== currentAM) {
+                            showSaveIndicator('⚠️ Solo il proprietario può spostare questo deal');
+                            renderKanban();
+                            draggedElement = null;
+                            return;
+                        }
                         deal.stage = newStage;
                         deal.updatedAt = new Date().toISOString();
                         await saveToLocalStorage();
@@ -4942,14 +5067,35 @@
             
             console.log('URL parameter am:', amParam);
             
-            // Se non c'è parametro URL, prova a leggere da sessionStorage
+            // Se non c'è parametro URL, prova prima 'midaViewingAM' (AM correntemente visualizzato)
+            // poi fallback su 'midaUser' (utente di login)
             if (!amParam) {
+                const viewingAM = sessionStorage.getItem('midaViewingAM');
+                if (viewingAM) {
+                    try {
+                        const viewData = JSON.parse(viewingAM);
+                        if (viewData.amKey && viewData.amName) {
+                            console.log('📦 AM visualizzato da sessionStorage:', viewData.amKey);
+                            // Bypass mappa username→key: usiamo direttamente la key
+                            const overlay = document.getElementById('amSearchOverlay');
+                            if (overlay) overlay.value = viewData.amName;
+                            document.getElementById('currentAM').value = viewData.amKey;
+                            currentAM = viewData.amKey;
+                            currentAMName = viewData.amName;
+                            loadPipeline();
+                            return; // Fatto — nessun altro lookup necessario
+                        }
+                    } catch (error) {
+                        console.log('❌ Errore lettura midaViewingAM:', error);
+                    }
+                }
+                // Fallback: leggi username di login
                 const savedUser = sessionStorage.getItem('midaUser');
                 if (savedUser) {
                     try {
                         const userData = JSON.parse(savedUser);
                         amParam = userData.username; // es: giancarlo.novara
-                        console.log('📦 Username da sessionStorage:', amParam);
+                        console.log('📦 Username da sessionStorage (login):', amParam);
                     } catch (error) {
                         console.log('❌ Errore lettura sessionStorage:', error);
                     }
