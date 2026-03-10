@@ -250,6 +250,11 @@
                 font-size: 12px;
                 min-height: 36px;
             }
+
+            /* Nasconde nel menu hamburger i bottoni desktop-only */
+            .mobile-hidden {
+                display: none !important;
+            }
             .view-toggle-bar {
                 gap: 10px;
                 padding: 10px 12px;
@@ -398,6 +403,39 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
+        }
+
+        .kanban-sort-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px 10px;
+            border-bottom: 1px solid var(--mida-light-gray);
+            margin-bottom: 4px;
+        }
+
+        .kanban-sort-bar label {
+            font-size: 11px;
+            color: var(--mida-gray);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .kanban-sort-select {
+            flex: 1;
+            padding: 5px 8px;
+            border: 1.5px solid var(--mida-border);
+            border-radius: 7px;
+            font-size: 12px;
+            color: var(--mida-navy);
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .kanban-sort-select:focus {
+            outline: none;
+            border-color: var(--mida-purple);
         }
 
         .column-header {
@@ -1313,13 +1351,13 @@
                     </a>
                 </div>
                 <div class="header-actions" id="headerActions">
-<button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
+<button class="btn btn-secondary mobile-hidden" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
                         📤 Importa Excel
                     </button>
-                    <button class="btn btn-secondary" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;" title="Rimuovi deal vuoti senza owner o cliente">
+                    <button class="btn btn-secondary mobile-hidden" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;" title="Rimuovi deal vuoti senza owner o cliente">
                         🧹 Pulizia deal vuoti
                     </button>
-                    <button class="btn btn-secondary" onclick="exportToExcel()">
+                    <button class="btn btn-secondary mobile-hidden" onclick="exportToExcel()">
                         📥 Esporta CSV
                     </button>
                     <button class="btn btn-success" onclick="forceSave()" style="background: var(--mida-orange);">
@@ -1439,6 +1477,18 @@
             <div id="tab-kanban" class="tab-content active">
                 <div class="mobile-helper">
                     💡 <strong>Tip Mobile:</strong> Trascina le card tra le colonne per cambiarle di stage, oppure usa "Modifica" per aggiornare.
+                </div>
+
+                <div class="kanban-sort-bar">
+                    <label>Ordina per:</label>
+                    <select class="kanban-sort-select" id="kanbanSortSelect" onchange="setKanbanSort(this.value)">
+                        <option value="value_desc">💰 Valore (↓)</option>
+                        <option value="value_asc">💰 Valore (↑)</option>
+                        <option value="customer_asc">🔤 Cliente (A→Z)</option>
+                        <option value="customer_desc">🔤 Cliente (Z→A)</option>
+                        <option value="date_desc">📅 Inserimento (recente)</option>
+                        <option value="date_asc">📅 Inserimento (meno recente)</option>
+                    </select>
                 </div>
                 
                 <div class="kanban-board">
@@ -1908,6 +1958,7 @@
 
         // Data storage
         let deals = [];
+        let currentKanbanSort = 'value_desc'; // default: valore decrescente
         let currentAM = '';
         let currentAMName = '';
         let editingDealId = null;
@@ -3552,6 +3603,36 @@
         }
 
         // Render Kanban board
+        function setKanbanSort(val) {
+            currentKanbanSort = val;
+            renderKanban();
+        }
+
+        function sortDealsForKanban(arr) {
+            const sorted = [...arr];
+            switch (currentKanbanSort) {
+                case 'value_desc':
+                    sorted.sort((a, b) => (b.value || 0) - (a.value || 0));
+                    break;
+                case 'value_asc':
+                    sorted.sort((a, b) => (a.value || 0) - (b.value || 0));
+                    break;
+                case 'customer_asc':
+                    sorted.sort((a, b) => (a.customer || '').localeCompare(b.customer || '', 'it'));
+                    break;
+                case 'customer_desc':
+                    sorted.sort((a, b) => (b.customer || '').localeCompare(a.customer || '', 'it'));
+                    break;
+                case 'date_desc':
+                    sorted.sort((a, b) => new Date(b.createdAt || b.created_at || 0) - new Date(a.createdAt || a.created_at || 0));
+                    break;
+                case 'date_asc':
+                    sorted.sort((a, b) => new Date(a.createdAt || a.created_at || 0) - new Date(b.createdAt || b.created_at || 0));
+                    break;
+            }
+            return sorted;
+        }
+
         function renderKanban() {
             ['v0', 'v1', 'v2', 'v3', 'won'].forEach(stage => {
                 const column = document.getElementById(`column-${stage}`);
@@ -3568,7 +3649,14 @@
                 return false;
             });
 
-            amDeals.forEach(deal => {
+            // Applica ordinamento
+            const sortedDeals = sortDealsForKanban(amDeals);
+
+            // Sincronizza select se presente
+            const sel = document.getElementById('kanbanSortSelect');
+            if (sel) sel.value = currentKanbanSort;
+
+            sortedDeals.forEach(deal => {
                 const card = createDealCard(deal);
                 document.getElementById(`column-${deal.stage}`).appendChild(card);
             });

@@ -1145,7 +1145,11 @@
                     loginTime: new Date().toISOString()
                 };
 
+                // sessionStorage: sessione corrente
                 sessionStorage.setItem('midaUser', JSON.stringify(userData));
+                // localStorage: persistenza 30 giorni (sopravvive alla chiusura dell'app)
+                const persistData = { ...userData, expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000 };
+                localStorage.setItem('midaUserPersist', JSON.stringify(persistData));
 
                 document.getElementById('userName').textContent = userData.name;
                 document.getElementById('userAvatar').textContent = userData.initials;
@@ -1165,6 +1169,7 @@
         // Handle logout
         function handleLogout() {
             sessionStorage.removeItem('midaUser');
+            localStorage.removeItem('midaUserPersist');
             showLoginScreen();
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
@@ -1186,25 +1191,56 @@
         }
 
         function checkAuth() {
-            const savedUser = sessionStorage.getItem('midaUser');
-            if (savedUser) {
+            // 1. Prova sessionStorage (sessione aperta)
+            const savedSession = sessionStorage.getItem('midaUser');
+            if (savedSession) {
                 try {
-                    const userData = JSON.parse(savedUser);
+                    const userData = JSON.parse(savedSession);
                     document.getElementById('userName').textContent = userData.name;
                     document.getElementById('userAvatar').textContent = userData.initials;
                     showMainScreen();
+                    return;
                 } catch {
                     sessionStorage.removeItem('midaUser');
-                    showLoginScreen();
                 }
-            } else {
-                showLoginScreen();
             }
+            // 2. Prova localStorage (persistenza 30 giorni)
+            const savedPersist = localStorage.getItem('midaUserPersist');
+            if (savedPersist) {
+                try {
+                    const persistData = JSON.parse(savedPersist);
+                    if (persistData.expiresAt && Date.now() < persistData.expiresAt) {
+                        // Valido — ripristina sessione
+                        sessionStorage.setItem('midaUser', JSON.stringify(persistData));
+                        document.getElementById('userName').textContent = persistData.name;
+                        document.getElementById('userAvatar').textContent = persistData.initials;
+                        showMainScreen();
+                        return;
+                    } else {
+                        // Scaduto — pulisci
+                        localStorage.removeItem('midaUserPersist');
+                    }
+                } catch {
+                    localStorage.removeItem('midaUserPersist');
+                }
+            }
+            showLoginScreen();
         }
 
         function openPipeline(event) {
             event.preventDefault();
-            const userData = JSON.parse(sessionStorage.getItem('midaUser'));
+            // Assicura che midaUser sia in sessionStorage prima di navigare
+            let userData = null;
+            try { userData = JSON.parse(sessionStorage.getItem('midaUser')); } catch {}
+            if (!userData) {
+                try {
+                    const p = JSON.parse(localStorage.getItem('midaUserPersist'));
+                    if (p && p.expiresAt && Date.now() < p.expiresAt) {
+                        sessionStorage.setItem('midaUser', JSON.stringify(p));
+                        userData = p;
+                    }
+                } catch {}
+            }
             if (userData?.username) {
                 window.location.href = `https://gianka82-star.github.io/mida-sales/mida_pipeline_kanban_v3.html?am=${encodeURIComponent(userData.username)}`;
             } else {
