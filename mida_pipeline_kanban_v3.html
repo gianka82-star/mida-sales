@@ -3378,43 +3378,86 @@
 
             // Genera badge co-owner se presenti
             let coOwnerBadge = '';
-            if (deal.coOwners && deal.coOwners.length > 0) {
-                const coOwnerNames = deal.coOwners.map(co => {
-                    const parts = co.name.split('_');
-                    return parts.map(p => p.charAt(0).toUpperCase()).join('');
-                }).join(', ');
-                
-                coOwnerBadge = `
-                    <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                        <span style="
-                            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-                            color: #7b1fa2;
-                            padding: 4px 8px;
-                            border-radius: 10px;
-                            font-size: 10px;
-                            font-weight: 600;
-                            border: 1px solid #ba68c8;
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 4px;
-                        ">
-                            <span>🤝</span>
-                            <span>Co-owner: ${coOwnerNames}</span>
-                        </span>
-                    </div>
-                `;
+            if (deal.coAccounting === 'yes' && deal.coOwners && deal.coOwners.length > 0) {
+                const iAmOwner = deal.owner === currentAM;
+
+                if (iAmOwner) {
+                    // Sono il creatore/owner: mostro tutti i co-owner
+                    const coOwnerNames = deal.coOwners.map(co => {
+                        const parts = co.name.split('_');
+                        return parts.map(p => p.charAt(0).toUpperCase()).join('');
+                    }).join(', ');
+                    coOwnerBadge = `
+                        <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                            <span style="
+                                background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+                                color: #7b1fa2;
+                                padding: 4px 8px;
+                                border-radius: 10px;
+                                font-size: 10px;
+                                font-weight: 600;
+                                border: 1px solid #ba68c8;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 4px;
+                            ">
+                                <span>🤝</span>
+                                <span>Con: ${coOwnerNames}</span>
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    // Sono un co-owner: mostro chi è l'owner principale + altri co-owner (escludo me stesso)
+                    const ownerInitials = deal.owner.split('_').map(p => p.charAt(0).toUpperCase()).join('');
+                    const ownerFullName = AM_NAMES_MAP[deal.owner] || deal.owner;
+                    const myCoData = deal.coOwners.find(co => co.name === currentAM);
+                    const myPct = myCoData ? myCoData.pct : null;
+
+                    // Altri co-owner oltre a me
+                    const otherCoOwners = deal.coOwners.filter(co => co.name !== currentAM);
+                    const otherNames = otherCoOwners.map(co => {
+                        const parts = co.name.split('_');
+                        return parts.map(p => p.charAt(0).toUpperCase()).join('');
+                    }).join(', ');
+
+                    const myPctLabel = myPct != null ? ` · ${myPct}%` : '';
+                    const otherLabel = otherNames ? ` · altri: ${otherNames}` : '';
+
+                    coOwnerBadge = `
+                        <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                            <span style="
+                                background: linear-gradient(135deg, #e8f4fd 0%, #bee3f8 100%);
+                                color: #1a56db;
+                                padding: 4px 8px;
+                                border-radius: 10px;
+                                font-size: 10px;
+                                font-weight: 600;
+                                border: 1px solid #90cdf4;
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 4px;
+                            " title="Owner principale: ${ownerFullName}">
+                                <span>👤</span>
+                                <span>Owner: ${ownerInitials}${myPctLabel}${otherLabel}</span>
+                            </span>
+                        </div>
+                    `;
+                }
             }
 
             // Calcola valore display e quota personale
             const displayValue = getDealDisplayValue(deal);
             const isPersonalMode = valueViewMode === 'personal';
             let personalQuotaLine = '';
-            if (isPersonalMode && deal.coAccounting === 'yes') {
-                const pct = deal.owner === currentAM 
+            if (deal.coAccounting === 'yes') {
+                const iAmOwnerQ = deal.owner === currentAM;
+                const pct = iAmOwnerQ
                     ? (deal.ownerPct != null ? deal.ownerPct : 100)
                     : (deal.coOwners && deal.coOwners.find(c => c.name === currentAM)?.pct);
-                if (pct != null && pct !== 100) {
-                    personalQuotaLine = `<div style="font-size:11px; color:#9ca3af; margin-top:2px;">Totale deal: € ${deal.value.toLocaleString('it-IT')} · Tua quota: ${pct}%</div>`;
+                // Mostra la quota sia in modalità personale che co-account (quando <100%)
+                if (pct != null && pct < 100) {
+                    const modeLabel = isPersonalMode ? 'Tua quota' : 'La tua parte';
+                    personalQuotaLine = `<div style="font-size:11px; color:#9ca3af; margin-top:2px;">Totale deal: € ${deal.value.toLocaleString('it-IT')} · ${modeLabel}: ${pct}%</div>`;
                 }
             }
 
