@@ -848,6 +848,56 @@
             }
         }
 
+
+        /* ── Autocomplete suggerimenti ── */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+        .autocomplete-list {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0; right: 0;
+            background: white;
+            border: 1.5px solid rgba(107,91,149,0.25);
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 9999;
+            max-height: 200px;
+            overflow-y: auto;
+            animation: acFadeIn 0.15s ease;
+        }
+        @keyframes acFadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .autocomplete-list.hiding {
+            animation: acFadeOut 0.2s ease forwards;
+        }
+        @keyframes acFadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to   { opacity: 0; transform: translateY(-4px); }
+        }
+        .autocomplete-item {
+            padding: 9px 14px;
+            font-size: 13px;
+            color: #374151;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.1s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item:hover, .autocomplete-item.focused {
+            background: rgba(107,91,149,0.08);
+            color: var(--mida-purple);
+        }
+        .autocomplete-item mark {
+            background: none;
+            color: var(--mida-purple);
+            font-weight: 700;
+        }
         .form-group {
             margin-bottom: 20px;
         }
@@ -1620,12 +1670,26 @@
             <form id="dealForm" onsubmit="saveDeal(event)">
                 <div class="form-group">
                     <label class="form-label">Cliente *</label>
-                    <input type="text" class="form-input" id="dealCustomer" required>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-input" id="dealCustomer" required
+                            autocomplete="off"
+                            oninput="acShow('dealCustomer', 'acCustomer', getACSuggestions('customer', this.value))"
+                            onkeydown="acKeyNav(event, 'acCustomer')"
+                            onblur="acHide('acCustomer')">
+                        <div class="autocomplete-list" id="acCustomer" style="display:none;"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Titolo Proposta *</label>
-                    <input type="text" class="form-input" id="dealTitle" required>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" class="form-input" id="dealTitle" required
+                            autocomplete="off"
+                            oninput="acShow('dealTitle', 'acTitle', getACSuggestions('title', this.value))"
+                            onkeydown="acKeyNav(event, 'acTitle')"
+                            onblur="acHide('acTitle')">
+                        <div class="autocomplete-list" id="acTitle" style="display:none;"></div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -3148,6 +3212,131 @@
             const ok = Math.abs(total - 100) < 0.5;
             bar.style.background = ok ? '#d1fae5' : '#fee2e2';
             el.style.color       = ok ? '#065f46' : '#991b1b';
+        }
+
+
+        // ═══════════════════════════════════════════════════════
+        // AUTOCOMPLETE — Cliente e Titolo Proposta
+        // ═══════════════════════════════════════════════════════
+
+        let acTimers = {}; // timer per auto-dismiss
+
+        /** Raccoglie valori unici dal DB locale per il campo richiesto */
+        function getACSuggestions(field, query) {
+            if (!query || query.length < 2) return [];
+            const q = query.toLowerCase();
+            const seen = new Set();
+            const results = [];
+            (deals || []).forEach(d => {
+                const val = field === 'customer' ? d.customer : d.title;
+                if (!val) return;
+                const v = val.trim();
+                if (v.toLowerCase().includes(q) && !seen.has(v.toLowerCase())) {
+                    seen.add(v.toLowerCase());
+                    results.push(v);
+                }
+            });
+            // Ordina: prima quelli che iniziano con la query, poi gli altri
+            results.sort((a, b) => {
+                const aStarts = a.toLowerCase().startsWith(q);
+                const bStarts = b.toLowerCase().startsWith(q);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                return a.localeCompare(b);
+            });
+            return results.slice(0, 8); // max 8 suggerimenti
+        }
+
+        /** Mostra il dropdown con i suggerimenti */
+        function acShow(inputId, listId, suggestions) {
+            const list = document.getElementById(listId);
+            const input = document.getElementById(inputId);
+            if (!list || !input) return;
+
+            // Annulla timer di dismiss
+            if (acTimers[listId]) clearTimeout(acTimers[listId]);
+
+            if (!suggestions.length) { acHideNow(listId); return; }
+
+            const q = input.value.toLowerCase();
+            list.innerHTML = suggestions.map((s, i) => {
+                // Evidenzia la parte corrispondente
+                const idx = s.toLowerCase().indexOf(q);
+                const highlighted = idx >= 0
+                    ? s.substring(0, idx) + '<mark>' + s.substring(idx, idx + q.length) + '</mark>' + s.substring(idx + q.length)
+                    : s;
+                return `<div class="autocomplete-item" data-value="${s.replace(/"/g,'&quot;')}" data-index="${i}"
+                    onmousedown="acPick('${inputId}', '${listId}', this.dataset.value)"
+                    onmouseover="acFocus('${listId}', ${i})">${highlighted}</div>`;
+            }).join('');
+
+            list.style.display = 'block';
+            list.classList.remove('hiding');
+
+            // Auto-dismiss dopo 5 secondi di inattività
+            acTimers[listId] = setTimeout(() => acHide(listId), 5000);
+        }
+
+        /** Seleziona un suggerimento */
+        function acPick(inputId, listId, value) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = value;
+                input.dispatchEvent(new Event('input')); // aggiorna eventuale logica dipendente
+            }
+            acHideNow(listId);
+            if (acTimers[listId]) clearTimeout(acTimers[listId]);
+        }
+
+        /** Evidenzia item con tastiera */
+        function acFocus(listId, index) {
+            document.querySelectorAll(`#${listId} .autocomplete-item`).forEach((el, i) => {
+                el.classList.toggle('focused', i === index);
+            });
+        }
+
+        /** Navigazione tastiera: frecce + Enter + Esc */
+        function acKeyNav(event, listId) {
+            const list = document.getElementById(listId);
+            if (!list || list.style.display === 'none') return;
+            const items = list.querySelectorAll('.autocomplete-item');
+            if (!items.length) return;
+
+            const focused = list.querySelector('.focused');
+            let idx = focused ? parseInt(focused.dataset.index) : -1;
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                idx = Math.min(idx + 1, items.length - 1);
+                acFocus(listId, idx);
+                if (acTimers[listId]) clearTimeout(acTimers[listId]);
+                acTimers[listId] = setTimeout(() => acHide(listId), 5000);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                idx = Math.max(idx - 1, 0);
+                acFocus(listId, idx);
+            } else if (event.key === 'Enter' && focused) {
+                event.preventDefault();
+                const inputId = listId === 'acCustomer' ? 'dealCustomer' : 'dealTitle';
+                acPick(inputId, listId, focused.dataset.value);
+            } else if (event.key === 'Escape') {
+                acHideNow(listId);
+            }
+        }
+
+        /** Nasconde con animazione (chiamato da onblur — piccolo delay per permettere click) */
+        function acHide(listId) {
+            acTimers[listId] = setTimeout(() => acHideNow(listId), 150);
+        }
+
+        function acHideNow(listId) {
+            const list = document.getElementById(listId);
+            if (!list || list.style.display === 'none') return;
+            list.classList.add('hiding');
+            setTimeout(() => {
+                list.style.display = 'none';
+                list.classList.remove('hiding');
+            }, 200);
         }
 
         // Render Kanban board
