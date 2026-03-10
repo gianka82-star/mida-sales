@@ -244,6 +244,12 @@
         }
 
         @media (max-width: 768px) {
+            /* Bottoni card: area tap più grande su mobile */
+            .deal-btn {
+                padding: 9px 6px;
+                font-size: 12px;
+                min-height: 36px;
+            }
             .view-toggle-bar {
                 gap: 10px;
                 padding: 10px 12px;
@@ -4173,6 +4179,12 @@
                 const card = e.target.closest('.deal-card');
                 if (!card) return;
 
+                // Se il tap è su un bottone (.deal-btn) o add-card-btn
+                // non intercettare: lascia passare il click normalmente
+                if (e.target.closest('.deal-btn') || e.target.closest('.add-card-btn') || e.target.closest('button')) {
+                    return;
+                }
+
                 const touch = e.touches[0];
                 const rect = card.getBoundingClientRect();
                 touchOffsetX = touch.clientX - rect.left;
@@ -4222,6 +4234,14 @@
 
             document.addEventListener('touchend', async function(e) {
                 if (!draggedElement) return;
+                // Se il target è un bottone, resetta stato drag e lascia gestire il click
+                if (e.target.closest('.deal-btn') || e.target.closest('button')) {
+                    draggedElement.classList.remove('dragging');
+                    if (touchClone) { touchClone.remove(); touchClone = null; }
+                    if (lastDropTarget) { lastDropTarget.classList.remove('drag-over-target'); lastDropTarget = null; }
+                    draggedElement = null;
+                    return;
+                }
 
                 const touch = e.changedTouches[0];
 
