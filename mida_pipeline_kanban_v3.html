@@ -1307,7 +1307,7 @@
                     </a>
                 </div>
                 <div class="header-actions" id="headerActions">
-                    <button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
+<button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
                         📤 Importa Excel
                     </button>
                     <button class="btn btn-secondary" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;" title="Rimuovi deal vuoti senza owner o cliente">
@@ -1947,13 +1947,33 @@
         function selectAMFromList(value, displayName) {
             document.getElementById('amSelectWrapper').style.display = 'none';
             if (!value) return;
+            const previousAM = currentAM;
             document.getElementById('amSearchOverlay').value = displayName;
             document.getElementById('currentAM').value = value;
             currentAM = value;
             currentAMName = displayName;
             // Memorizza l'AM visualizzato per resistere ai reload
             try { sessionStorage.setItem('midaViewingAM', JSON.stringify({amKey: value, amName: displayName})); } catch(e) {}
+            // Logga accesso pipeline altro AM (solo se diverso da se stesso)
+            const loggedInUser = (() => { try { return JSON.parse(sessionStorage.getItem('midaUser') || '{}').username || ''; } catch(e) { return ''; } })();
+            const loggedInKey = _usernameToAmKey(loggedInUser);
+            if (loggedInKey && value !== loggedInKey) {
+                logActivity('VIEW_OTHER_AM', { viewed_am: value, viewed_am_name: displayName });
+            }
             loadPipeline();
+        }
+
+        /** Converte username login → am_key (usato per log VIEW_OTHER_AM) */
+        function _usernameToAmKey(username) {
+            const map = {
+                'giancarlo.novara':'giancarlo_novara','rudra.chakraborty':'rudra_chakraborty',
+                'alessia.mistretta':'alessia_mistretta','marco.poggi':'marco_poggi',
+                'silvio.trombetta':'silvio_trombetta','marta.coser':'marta_coser',
+                'enrico.gambi':'enrico_gambi','elisa.rando':'elisa_rando',
+                'pierpaolo.peretti.griva':'pierpaolo_griva','pierpaolo.griva':'pierpaolo_griva',
+                'laura.virginia.pieralisi':'laura_pieralisi','laura.pieralisi':'laura_pieralisi'
+            };
+            return map[username.toLowerCase()] || username.replace(/\./g,'_');
         }
 
         function filterAmSelect(query) {
@@ -1971,7 +1991,10 @@
             currentAMName = displayName;
             // Memorizza l'AM visualizzato per resistere ai reload
             try { sessionStorage.setItem('midaViewingAM', JSON.stringify({amKey: value, amName: displayName})); } catch(e) {}
-            loadPipeline();
+            loadPipeline().then(() => {
+                logActivity('LOGIN');
+                checkWeeklyBackup();
+            });
         }
 
         // Legacy stubs
@@ -3103,7 +3126,16 @@
                 }, 300);
             }
 
+            const isNew = !editingDealId;
             await saveToLocalStorage();
+            logActivity(isNew ? 'DEAL_CREATE' : 'DEAL_UPDATE', {
+                deal_id:    dealData.id,
+                deal_title: dealData.title,
+                deal_owner: dealData.owner,
+                value:      dealData.value,
+                stage:      dealData.stage,
+                co_accounting: dealData.coAccounting
+            });
             renderKanban();
             updateStats();
             updateQuarterAnalysis();
@@ -3114,8 +3146,16 @@
         // Delete deal
         async function deleteDeal(dealId) {
             if (confirm('Sei sicuro di voler eliminare questa opportunità?')) {
+                const deal = deals.find(d => d.id === dealId);
                 deals = deals.filter(d => d.id !== dealId);
                 await deleteDealFromDB(dealId);
+                if (deal) logActivity('DEAL_DELETE', {
+                    deal_id:    dealId,
+                    deal_title: deal.title,
+                    deal_owner: deal.owner,
+                    value:      deal.value,
+                    stage:      deal.stage
+                });
                 renderKanban();
                 updateStats();
                 updateQuarterAnalysis();
@@ -4108,6 +4148,13 @@
                             deal.stage = newStage;
                             deal.updatedAt = new Date().toISOString();
                             await saveToLocalStorage();
+                            logActivity('STAGE_CHANGE', {
+                                deal_id:    deal.id,
+                                deal_title: deal.title,
+                                deal_owner: deal.owner,
+                                old_stage:  oldStage,
+                                new_stage:  newStage
+                            });
                             // Notifica co-owner del cambio stage
                             if (deal.coOwners && deal.coOwners.length > 0) {
                                 notifyCoOwnersStageChange(deal, oldStage, newStage);
@@ -4203,9 +4250,18 @@
                             draggedElement = null;
                             return;
                         }
+                        const oldStageTch = deal.stage;
                         deal.stage = newStage;
                         deal.updatedAt = new Date().toISOString();
                         await saveToLocalStorage();
+                        logActivity('STAGE_CHANGE', {
+                            deal_id:    deal.id,
+                            deal_title: deal.title,
+                            deal_owner: deal.owner,
+                            old_stage:  oldStageTch,
+                            new_stage:  newStage,
+                            method:     'touch'
+                        });
                         renderKanban();
                         updateStats();
                         updateQuarterAnalysis();
@@ -4289,6 +4345,85 @@
                     : 'Errore salvataggio: ' + e.message;
                 alert(msg);
             }
+        }
+
+
+        // ============================================
+        // ACTIVITY LOGGING & BACKUP
+        // ============================================
+
+        /**
+         * Logga un'azione su Supabase (fire-and-forget, non blocca la UI)
+         * @param {string} action  — LOGIN|LOGOUT|DEAL_CREATE|DEAL_UPDATE|DEAL_DELETE|STAGE_CHANGE|VIEW_OTHER_AM
+         * @param {object} detail  — payload extra (opzionale)
+         */
+        async function logActivity(action, detail = {}) {
+            if (!currentAM) return;
+            try {
+                const row = {
+                    am_key:     currentAM,
+                    am_name:    currentAMName || AM_NAMES_MAP[currentAM] || currentAM,
+                    action:     action,
+                    deal_id:    detail.deal_id   || null,
+                    deal_title: detail.deal_title || null,
+                    deal_owner: detail.deal_owner || null,
+                    detail:     JSON.stringify(detail)
+                };
+                // Fire-and-forget: ignora errori di rete silenziosamente
+                supabaseRequest('POST', 'activity_logs', row, '').catch(() => {});
+            } catch(e) { /* silenzioso */ }
+        }
+
+        /**
+         * Verifica se siamo in una nuova settimana ISO rispetto all'ultimo backup.
+         * Se sì, esegue automaticamente un backup silenzioso.
+         */
+        async function checkWeeklyBackup() {
+            try {
+                const now = new Date();
+                const weekLabel = getISOWeekLabel(now);
+
+                // Leggi ultima settimana backuppata da config
+                const rows = await supabaseRequest('GET', 'config', null, '?key=eq.last_backup_week');
+                const lastWeek = rows && rows[0] ? rows[0].value : '';
+
+                if (lastWeek !== weekLabel) {
+                    console.log('📦 Nuovo backup settimanale:', weekLabel);
+                    await runPipelineBackup(weekLabel, 'auto');
+                    // Aggiorna config
+                    await supabaseRequest('PATCH', 'config', { value: weekLabel }, '?key=eq.last_backup_week');
+                }
+            } catch(e) {
+                console.warn('Backup settimanale fallito silenziosamente:', e);
+            }
+        }
+
+        /**
+         * Esegue un backup completo della pipeline
+         * @param {string} weekLabel  — es. "2026-W10"
+         * @param {string} triggeredBy — am_key o 'auto'
+         */
+        async function runPipelineBackup(weekLabel, triggeredBy) {
+            // Carica snapshot completo
+            const allDeals = await supabaseRequest('GET', 'deals', null, '');
+            const snapshot = allDeals || deals;
+            const row = {
+                week_label:   weekLabel,
+                triggered_by: triggeredBy || currentAM || 'manual',
+                deals_count:  snapshot.length,
+                snapshot:     JSON.stringify(snapshot)
+            };
+            await supabaseRequest('POST', 'pipeline_backups', row, '');
+            return snapshot.length;
+        }
+
+        /** Restituisce la label settimana ISO: "2026-W10" */
+        function getISOWeekLabel(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return d.getUTCFullYear() + '-W' + String(weekNum).padStart(2, '0');
         }
 
         // Carica da Supabase tutti i deals dove sono owner o co-owner
@@ -4645,6 +4780,7 @@
         // ═══════════════════════════════════════════════════════
 
         let cleanupFoundIds = [];
+
 
         function openCleanupModal() {
             document.getElementById('cleanupModal').style.display = 'block';
@@ -5449,6 +5585,7 @@
     </div>
   </div>
 </div>
+
 
 
 <!-- ═══════════════════════════════════════════════════════

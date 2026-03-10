@@ -283,6 +283,14 @@
                 <div class="stat-label">Disabilitati</div>
                 <div class="stat-value" id="statInactive">—</div>
             </div>
+            <div class="stat-card" style="--color: #1a56db">
+                <div class="stat-label">Log questa settimana</div>
+                <div class="stat-value" id="statLogsWeek">—</div>
+            </div>
+            <div class="stat-card" style="--color: #7c3aed">
+                <div class="stat-label">Ultimo backup</div>
+                <div class="stat-value" id="statLastBackup" style="font-size:18px;">—</div>
+            </div>
         </div>
 
         <!-- Users panel -->
@@ -355,6 +363,98 @@
                     <input type="text" id="newSharedPwd" placeholder="Inserisci nuova password">
                 </div>
                 <button class="btn btn-primary" onclick="updatePassword()">Aggiorna password</button>
+            </div>
+        </div>
+
+
+        <!-- ── LOG & BACKUP PANEL ─────────────────────────── -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>📋 Log Attività</h2>
+                    <p>Monitoraggio azioni degli Account Manager sul sistema</p>
+                </div>
+                <button class="btn btn-primary" onclick="exportLogsCsv()" style="background:#1a56db;">⬇ Esporta CSV</button>
+            </div>
+
+            <!-- Filtri log -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; padding:0 4px;">
+                <select id="logFilterAM" onchange="applyLogFilters()"
+                    style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; color:var(--navy);">
+                    <option value="">Tutti gli AM</option>
+                </select>
+                <select id="logFilterAction" onchange="applyLogFilters()"
+                    style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; color:var(--navy);">
+                    <option value="">Tutte le azioni</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="DEAL_CREATE">Creazione deal</option>
+                    <option value="DEAL_UPDATE">Modifica deal</option>
+                    <option value="DEAL_DELETE">Eliminazione deal</option>
+                    <option value="STAGE_CHANGE">Cambio stage</option>
+                    <option value="VIEW_OTHER_AM">Vista pipeline altro AM</option>
+                </select>
+                <input type="date" id="logFilterDateFrom" onchange="applyLogFilters()"
+                    style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px;">
+                <span style="font-size:12px; color:var(--gray);">→</span>
+                <input type="date" id="logFilterDateTo" onchange="applyLogFilters()"
+                    style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px;">
+                <button onclick="resetLogFilters()"
+                    style="padding:8px 14px; border:1.5px solid var(--border); background:white; border-radius:8px; font-size:13px; cursor:pointer; color:var(--gray);">
+                    ✕ Reset
+                </button>
+            </div>
+            <div id="logCountLabel" style="font-size:12px; color:var(--gray); margin-bottom:10px; padding:0 4px;"></div>
+
+            <div class="table-wrap" style="max-height:500px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Data/Ora</th>
+                            <th>AM</th>
+                            <th>Azione</th>
+                            <th>Deal</th>
+                            <th>Dettaglio</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr><td colspan="5" style="text-align:center; color:var(--gray); padding:32px;">Caricamento...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:14px; align-items:center;">
+                <button id="logPrevBtn" onclick="logPagePrev()"
+                    style="padding:7px 16px; border:1.5px solid var(--border); background:white; border-radius:8px; cursor:pointer; font-size:13px;">← Prec</button>
+                <span id="logPageLabel" style="font-size:13px; color:var(--gray);"></span>
+                <button id="logNextBtn" onclick="logPageNext()"
+                    style="padding:7px 16px; border:1.5px solid var(--border); background:white; border-radius:8px; cursor:pointer; font-size:13px;">Succ →</button>
+            </div>
+        </div>
+
+        <!-- ── BACKUP PANEL ────────────────────────────────── -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>📦 Backup Pipeline</h2>
+                    <p>Snapshot settimanali automatici — si attivano al primo accesso di ogni settimana ISO</p>
+                </div>
+                <button class="btn btn-primary" id="manualBackupBtn" onclick="triggerManualBackup()" style="background:#7c3aed;">📦 Backup manuale</button>
+            </div>
+
+            <div class="table-wrap" style="max-height:400px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Settimana</th>
+                            <th>Data/Ora</th>
+                            <th>Triggerato da</th>
+                            <th style="text-align:center"># Deal</th>
+                            <th style="text-align:center">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupsTableBody">
+                        <tr><td colspan="5" style="text-align:center; color:var(--gray); padding:32px;">Caricamento...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -511,6 +611,8 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'block';
         await loadUsers();
+        loadLogsData();
+        loadBackupsData();
     }
 
     async function loadUsers() {
@@ -755,6 +857,303 @@
             showAdminScreen();
         }
     });
+
+    // ═══════════════════════════════════════════════════════
+    // LOG & BACKUP
+    // ═══════════════════════════════════════════════════════
+
+    let allLogs = [];
+    let filteredLogs = [];
+    let logPage = 0;
+    const LOG_PAGE_SIZE = 50;
+
+    const ACTION_LABELS = {
+        'LOGIN':         { label: 'Login',                color: '#16a34a', bg: '#dcfce7' },
+        'LOGOUT':        { label: 'Logout',               color: '#6b7280', bg: '#f3f4f6' },
+        'DEAL_CREATE':   { label: 'Creazione deal',       color: '#1a56db', bg: '#dbeafe' },
+        'DEAL_UPDATE':   { label: 'Modifica deal',        color: '#d97706', bg: '#fef3c7' },
+        'DEAL_DELETE':   { label: 'Eliminazione deal',    color: '#ef4444', bg: '#fee2e2' },
+        'STAGE_CHANGE':  { label: 'Cambio stage',         color: '#7c3aed', bg: '#ede9fe' },
+        'VIEW_OTHER_AM': { label: 'Vista pipeline altro', color: '#0891b2', bg: '#cffafe' },
+    };
+
+    const STAGE_LABELS = { v0:'V0', v1:'V1', v2:'V2', v3:'V3', won:'WON', lost:'LOST' };
+
+    async function loadLogsData() {
+        const tbody = document.getElementById('logsTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:32px;">⏳ Caricamento log...</td></tr>';
+        try {
+            const rows = await sbGet('activity_logs', '?order=ts.desc&limit=1000');
+            allLogs = Array.isArray(rows) ? rows : [];
+            populateLogAmFilter();
+            applyLogFilters();
+            updateLogWeekStat();
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:32px;">Errore: ' + e.message + '</td></tr>';
+        }
+    }
+
+    function updateLogWeekStat() {
+        // Conta log della settimana corrente
+        const now = new Date();
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay() + 1); // lunedì
+        weekStart.setHours(0,0,0,0);
+        const count = allLogs.filter(l => l.ts && new Date(l.ts) >= weekStart).length;
+        const el = document.getElementById('statLogsWeek');
+        if (el) el.textContent = count;
+    }
+
+    function populateLogAmFilter() {
+        const sel = document.getElementById('logFilterAM');
+        while (sel.options.length > 1) sel.remove(1);
+        // Ricava AM unici dai log stessi
+        const seen = new Set();
+        allLogs.forEach(l => {
+            if (l.am_key && !seen.has(l.am_key)) {
+                seen.add(l.am_key);
+                const opt = document.createElement('option');
+                opt.value = l.am_key;
+                opt.textContent = l.am_name || l.am_key;
+                sel.appendChild(opt);
+            }
+        });
+        // Ordina alfabeticamente per nome
+        const opts = Array.from(sel.options).slice(1).sort((a,b) => a.textContent.localeCompare(b.textContent));
+        while (sel.options.length > 1) sel.remove(1);
+        opts.forEach(o => sel.appendChild(o));
+    }
+
+    function applyLogFilters() {
+        const amFilter     = document.getElementById('logFilterAM').value;
+        const actionFilter = document.getElementById('logFilterAction').value;
+        const dateFrom     = document.getElementById('logFilterDateFrom').value;
+        const dateTo       = document.getElementById('logFilterDateTo').value;
+
+        filteredLogs = allLogs.filter(log => {
+            if (amFilter     && log.am_key !== amFilter) return false;
+            if (actionFilter && log.action !== actionFilter) return false;
+            if (dateFrom) { if ((log.ts||'').substring(0,10) < dateFrom) return false; }
+            if (dateTo)   { if ((log.ts||'').substring(0,10) > dateTo)   return false; }
+            return true;
+        });
+        logPage = 0;
+        renderLogsTable();
+    }
+
+    function resetLogFilters() {
+        document.getElementById('logFilterAM').value = '';
+        document.getElementById('logFilterAction').value = '';
+        document.getElementById('logFilterDateFrom').value = '';
+        document.getElementById('logFilterDateTo').value = '';
+        applyLogFilters();
+    }
+
+    function renderLogsTable() {
+        const tbody = document.getElementById('logsTableBody');
+        const total = filteredLogs.length;
+        const start = logPage * LOG_PAGE_SIZE;
+        const end   = Math.min(start + LOG_PAGE_SIZE, total);
+        const page  = filteredLogs.slice(start, end);
+
+        const label = document.getElementById('logCountLabel');
+        if (label) label.textContent = total === 0 ? 'Nessun risultato' : `${total} eventi — mostro ${start+1}–${end}`;
+        const pageLabel = document.getElementById('logPageLabel');
+        if (pageLabel) pageLabel.textContent = `Pag. ${logPage+1} / ${Math.max(1, Math.ceil(total/LOG_PAGE_SIZE))}`;
+        const prevBtn = document.getElementById('logPrevBtn');
+        const nextBtn = document.getElementById('logNextBtn');
+        if (prevBtn) prevBtn.disabled = logPage === 0;
+        if (nextBtn) nextBtn.disabled = end >= total;
+
+        if (page.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:32px;">Nessun log trovato con i filtri selezionati</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = page.map((log, i) => {
+            const meta   = ACTION_LABELS[log.action] || { label: log.action, color:'#374151', bg:'#f3f4f6' };
+            const ts     = log.ts ? new Date(log.ts).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+            const amName = log.am_name || log.am_key || '—';
+            const amInit = (log.am_key||'').split('_').map(p=>p[0]?.toUpperCase()||'').join('').substring(0,3);
+
+            let extraDetail = '';
+            try {
+                const d = typeof log.detail === 'string' ? JSON.parse(log.detail) : (log.detail || {});
+                if (log.action === 'STAGE_CHANGE') {
+                    extraDetail = `${STAGE_LABELS[d.old_stage]||d.old_stage||'?'} → ${STAGE_LABELS[d.new_stage]||d.new_stage||'?'}`;
+                } else if (log.action === 'VIEW_OTHER_AM') {
+                    extraDetail = 'Visto: ' + (d.viewed_am_name || d.viewed_am || '?');
+                } else if (d.value) {
+                    extraDetail = '€ ' + Number(d.value).toLocaleString('it-IT');
+                }
+            } catch(e) {}
+
+            const dealCell = log.deal_title
+                ? `<div style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${log.deal_title}">${log.deal_title}</div>`
+                  + (log.deal_owner && log.deal_owner !== log.am_key ? `<div style="font-size:11px;color:var(--gray);">owner: ${log.deal_owner}</div>` : '')
+                : '<span style="color:var(--gray);">—</span>';
+
+            return `<tr>
+                <td style="white-space:nowrap;font-size:12px;color:var(--gray);">${ts}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:7px;">
+                        <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#6b5b95,#bc6c8e);
+                            display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:9px;flex-shrink:0;">${amInit}</div>
+                        <span style="font-size:13px;font-weight:600;">${amName}</span>
+                    </div>
+                </td>
+                <td><span style="background:${meta.bg};color:${meta.color};padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap;">${meta.label}</span></td>
+                <td>${dealCell}</td>
+                <td style="font-size:12px;color:var(--gray);">${extraDetail}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function logPagePrev() { if (logPage > 0) { logPage--; renderLogsTable(); } }
+    function logPageNext() {
+        if ((logPage+1) * LOG_PAGE_SIZE < filteredLogs.length) { logPage++; renderLogsTable(); }
+    }
+
+    function exportLogsCsv() {
+        if (filteredLogs.length === 0) { toast('Nessun log da esportare', 'error'); return; }
+        const headers = ['Data/Ora','AM Key','AM Nome','Azione','Deal ID','Deal Titolo','Deal Owner','Dettaglio'];
+        const rows = filteredLogs.map(log => {
+            let detailStr = '';
+            try {
+                const d = typeof log.detail === 'string' ? JSON.parse(log.detail) : (log.detail||{});
+                if (log.action==='STAGE_CHANGE') detailStr = `${d.old_stage||'?'} → ${d.new_stage||'?'}`;
+                else if (log.action==='VIEW_OTHER_AM') detailStr = d.viewed_am_name||d.viewed_am||'';
+                else if (d.value) detailStr = d.value;
+            } catch(e) {}
+            return [
+                log.ts ? new Date(log.ts).toLocaleString('it-IT') : '',
+                log.am_key||'', log.am_name||'', log.action||'',
+                log.deal_id||'', log.deal_title||'', log.deal_owner||'', detailStr
+            ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',');
+        });
+        const csv = [headers.join(','), ...rows].join('\n');
+        const a = document.createElement('a');
+        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        a.download = `MIDA_Log_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        toast(`${filteredLogs.length} log esportati`);
+    }
+
+    // ── BACKUP ────────────────────────────────────────────
+
+    function getISOWeekLabel(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        const weekNum = Math.ceil((((d-yearStart)/86400000)+1)/7);
+        return d.getUTCFullYear() + '-W' + String(weekNum).padStart(2,'0');
+    }
+
+    async function loadBackupsData() {
+        const tbody = document.getElementById('backupsTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:32px;">⏳ Caricamento backup...</td></tr>';
+        try {
+            const rows = await sbGet('pipeline_backups', '?order=created_at.desc&limit=52');
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:32px;">Nessun backup disponibile</td></tr>';
+                // Update stat
+                const el = document.getElementById('statLastBackup');
+                if (el) el.textContent = '—';
+                return;
+            }
+            // Update stat con ultimo backup
+            const last = rows[0];
+            const el = document.getElementById('statLastBackup');
+            if (el) el.textContent = last.week_label || '—';
+
+            tbody.innerHTML = rows.map((b,i) => {
+                const dt = b.created_at ? new Date(b.created_at).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+                const byLabel = b.triggered_by === 'auto' ? '<span style="color:var(--gray);">⚙ automatico</span>' : (b.triggered_by||'—');
+                return `<tr>
+                    <td style="font-weight:700;color:#1a56db;">${b.week_label||'—'}</td>
+                    <td style="color:var(--gray);font-size:12px;">${dt}</td>
+                    <td>${byLabel}</td>
+                    <td style="text-align:center;font-weight:700;">${b.deals_count||0}</td>
+                    <td style="text-align:center;">
+                        <button onclick="downloadBackup(${b.id},'${b.week_label}')"
+                            style="padding:4px 10px;background:#f0ebff;color:#6b5b95;border:1px solid #c4b5fd;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">
+                            ⬇ JSON
+                        </button>
+                        <button onclick="downloadBackupCsv(${b.id},'${b.week_label}')"
+                            style="padding:4px 10px;background:#f0fdf4;color:#16a34a;border:1px solid #86efac;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-left:6px;">
+                            ⬇ CSV
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        } catch(e) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--red);padding:32px;">Errore: ' + e.message + '</td></tr>';
+        }
+    }
+
+    async function triggerManualBackup() {
+        const btn = document.getElementById('manualBackupBtn');
+        btn.disabled = true; btn.textContent = '⏳ Backup in corso...';
+        try {
+            const weekLabel = getISOWeekLabel(new Date()) + '-manual';
+            // Carica snapshot completo
+            const allDeals = await sbGet('deals', '');
+            const snapshot = allDeals || [];
+            await sbUpsert('pipeline_backups', {
+                week_label:   weekLabel,
+                triggered_by: 'admin',
+                deals_count:  snapshot.length,
+                snapshot:     JSON.stringify(snapshot)
+            });
+            toast(`✅ Backup completato — ${snapshot.length} deal salvati`);
+            btn.textContent = `✅ Fatto (${snapshot.length} deal)`;
+            setTimeout(() => { btn.disabled = false; btn.textContent = '📦 Backup manuale'; }, 3000);
+            loadBackupsData();
+        } catch(e) {
+            toast('Errore backup: ' + e.message, 'error');
+            btn.disabled = false; btn.textContent = '📦 Backup manuale';
+        }
+    }
+
+    async function downloadBackup(backupId, weekLabel) {
+        try {
+            const rows = await sbGet('pipeline_backups', `?id=eq.${backupId}`);
+            if (!rows||!rows[0]) { toast('Backup non trovato','error'); return; }
+            const snap = rows[0].snapshot;
+            const blob = new Blob([typeof snap==='string' ? snap : JSON.stringify(snap,null,2)], {type:'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `MIDA_Backup_${weekLabel}.json`;
+            a.click();
+        } catch(e) { toast('Errore download: '+e.message,'error'); }
+    }
+
+    async function downloadBackupCsv(backupId, weekLabel) {
+        try {
+            const rows = await sbGet('pipeline_backups', `?id=eq.${backupId}`);
+            if (!rows||!rows[0]) { toast('Backup non trovato','error'); return; }
+            let snap = rows[0].snapshot;
+            if (typeof snap==='string') snap = JSON.parse(snap);
+            if (!Array.isArray(snap)) { toast('Formato non valido','error'); return; }
+            const headers = ['ID','Owner','Cliente','Titolo','BU','Valore','Stage','Q1','Q2','Q3','Q4','Data stimata','Co-accounting','Co-owner'];
+            const csvRows = snap.map(d => [
+                d.id||'', d.owner||'', d.customer||'', d.title||'',
+                d.division||'', d.value||0, d.stage||'',
+                d.value_q1||d.valueQ1||0, d.value_q2||d.valueQ2||0,
+                d.value_q3||d.valueQ3||0, d.value_q4||d.valueQ4||0,
+                d.estimated_date||d.estimatedDate||'',
+                d.co_accounting||d.coAccounting||'no',
+                (d.co_owners||d.coOwners||[]).map(c=>c.name+'('+c.pct+'%)').join('; ')
+            ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+            const csv = [headers.join(','), ...csvRows].join('\n');
+            const a = document.createElement('a');
+            a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+            a.download = `MIDA_Backup_${weekLabel}.csv`;
+            a.click();
+        } catch(e) { toast('Errore CSV: '+e.message,'error'); }
+    }
+
+
 </script>
 
 </body>
