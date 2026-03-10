@@ -2161,21 +2161,75 @@
             document.getElementById('dealNotes').value = deal.notes || '';
             updateQuarterTotal();
 
-            // Co-owner info
-            if (deal.coAccounting === 'yes' && deal.coOwners && deal.coOwners.length > 0) {
-                toggleCoAccountingAM();
-                const amSelect = document.getElementById('dealCoAccountingAMs');
-                Array.from(amSelect.options).forEach(opt => {
-                    opt.selected = deal.coOwners.some(co => co.name === opt.value);
-                });
-                const ownerPctEl = document.getElementById('ownerPct');
-                if (ownerPctEl) ownerPctEl.value = deal.ownerPct != null ? deal.ownerPct : 100;
-                buildCoOwnerPctRows();
-                deal.coOwners.forEach(co => {
-                    const inp = document.getElementById('pct_' + co.name);
-                    if (inp && co.pct != null) inp.value = co.pct;
-                });
-                updatePctTotal();
+            // Co-owner info: vista statica (non usa buildCoOwnerPctRows che assume currentAM=owner)
+            if (deal.coAccounting === 'yes') {
+                // Mostra il campo co-accounting come "Sì"
+                const coAccEl = document.getElementById('dealCoAccounting');
+                if (coAccEl) coAccEl.value = 'yes';
+
+                // Costruisci una distribuzione quote read-only basata sui dati reali del deal
+                const coGroup = document.getElementById('coAccountingAMGroup');
+                if (coGroup) {
+                    coGroup.style.display = 'block';
+
+                    // Sostituisci il contenuto del pannello quote con una vista statica
+                    const ownerPctRow = document.getElementById('ownerPctRow');
+                    const coOwnerPctRows = document.getElementById('coOwnerPctRows');
+                    const pctTotalRow = document.getElementById('pctTotalRow');
+
+                    // Owner reale del deal
+                    const realOwnerName = AM_NAMES_MAP[deal.owner] || deal.owner;
+                    const realOwnerInitials = deal.owner.split('_').map(p => p.charAt(0).toUpperCase()).join('');
+                    const realOwnerPct = deal.ownerPct != null ? deal.ownerPct : 100;
+
+                    if (ownerPctRow) {
+                        const avatarEl = document.getElementById('ownerPctAvatar');
+                        const labelEl = document.getElementById('ownerPctLabel');
+                        const pctEl = document.getElementById('ownerPct');
+                        if (avatarEl) avatarEl.textContent = realOwnerInitials;
+                        if (labelEl) labelEl.textContent = realOwnerName + ' (owner)';
+                        if (pctEl) pctEl.value = realOwnerPct;
+                    }
+
+                    // Co-owner rows statiche
+                    if (coOwnerPctRows && deal.coOwners && deal.coOwners.length > 0) {
+                        coOwnerPctRows.innerHTML = deal.coOwners.map(co => {
+                            const coName = AM_NAMES_MAP[co.name] || co.name;
+                            const coInitials = co.name.split('_').map(p => p.charAt(0).toUpperCase()).join('');
+                            const isMe = co.name === currentAM;
+                            return `
+                                <div style="display:flex; align-items:center; gap:10px; padding:8px 12px;
+                                    background:${isMe ? 'rgba(107,91,149,0.06)' : 'white'};
+                                    border-radius:8px; border:1.5px solid ${isMe ? 'rgba(107,91,149,0.3)' : 'rgba(107,91,149,0.15)'};
+                                    box-shadow:0 1px 3px rgba(107,91,149,0.08);">
+                                    <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#6b5b95,#bc6c8e);
+                                        display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:11px;flex-shrink:0;">
+                                        ${coInitials}
+                                    </div>
+                                    <span style="flex:1;font-size:13px;font-weight:${isMe ? '800' : '600'};color:var(--mida-navy);">
+                                        ${coName}${isMe ? ' <span style="color:#6b5b95;font-size:11px;">(tu)</span>' : ''}
+                                    </span>
+                                    <input type="number" value="${co.pct != null ? co.pct : 0}" disabled
+                                        style="width:60px;text-align:center;padding:6px;border:1.5px solid rgba(107,91,149,0.2);
+                                        border-radius:8px;font-size:13px;font-weight:700;color:var(--mida-navy);background:#f9f9fc;">
+                                    <span style="font-size:13px;color:#6b7280;font-weight:600;">%</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+
+                    // Totale
+                    if (pctTotalRow) {
+                        const allPcts = [realOwnerPct, ...(deal.coOwners || []).map(co => co.pct || 0)];
+                        const tot = allPcts.reduce((s, p) => s + p, 0);
+                        const totalEl = document.getElementById('pctTotal');
+                        if (totalEl) totalEl.textContent = tot + '%';
+                    }
+
+                    // Nascondi la select AM (non serve in read-only)
+                    const amSelectContainer = coGroup.querySelector('div[style*="Seleziona co-owner"]');
+                    // La select è già disabilitata dal loop generale, ok.
+                }
             }
 
             // Disabilita tutti gli input e select del form
@@ -3535,8 +3589,31 @@
                     const myPctLabel = myPct != null ? ` · ${myPct}%` : '';
                     const otherLabel = otherNames ? ` · altri: ${otherNames}` : '';
 
+                    // Badge separati: owner + quota personale
+                    const myPctBadge = myPct != null ? `
+                        <span style="
+                            background: linear-gradient(135deg, #e8f4fd 0%, #bee3f8 100%);
+                            color: #1a56db;
+                            padding: 4px 8px;
+                            border-radius: 10px;
+                            font-size: 10px;
+                            font-weight: 700;
+                            border: 1px solid #90cdf4;
+                        ">Quota: ${myPct}%</span>
+                    ` : '';
+                    const otherBadge = otherNames ? `
+                        <span style="
+                            background: #f3f4f6;
+                            color: #6b7280;
+                            padding: 4px 8px;
+                            border-radius: 10px;
+                            font-size: 10px;
+                            font-weight: 600;
+                            border: 1px solid #e5e7eb;
+                        ">+${otherNames}</span>
+                    ` : '';
                     coOwnerBadge = `
-                        <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <div style="margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
                             <span style="
                                 background: linear-gradient(135deg, #e8f4fd 0%, #bee3f8 100%);
                                 color: #1a56db;
@@ -3550,8 +3627,10 @@
                                 gap: 4px;
                             " title="Owner principale: ${ownerFullName} — Sei co-owner di questa opportunità">
                                 <span>👤</span>
-                                <span>Proposto da ${ownerInitials}${myPctLabel}${otherLabel}</span>
+                                <span>Owner: ${ownerInitials}</span>
                             </span>
+                            ${myPctBadge}
+                            ${otherBadge}
                         </div>
                     `;
                 }
