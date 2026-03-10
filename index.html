@@ -85,10 +85,19 @@
 
         /* Login screen: centrato nella viewport senza overflow */
         .container.login-active {
-            height: 100vh;
+            height: 100dvh; /* dynamic viewport height: esclude barra browser mobile */
+            height: 100vh;  /* fallback per browser senza dvh */
             min-height: unset;
-            overflow: hidden;
+            overflow-y: auto;
             align-items: center;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        /* Su schermi piccoli: evita che la card sia tagliata */
+        @supports (height: 100dvh) {
+            .container.login-active {
+                height: 100dvh;
+            }
         }
 
         /* Login Screen */
@@ -514,18 +523,62 @@
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
+        @media (max-width: 400px) {
+            .container.login-active {
+                align-items: flex-start;
+                padding-top: max(16px, env(safe-area-inset-top, 16px));
+            }
             .login-card {
-                padding: 36px 28px;
+                padding: 22px 18px;
+                border-radius: 20px;
+            }
+            .logo { font-size: 36px; }
+            .logo-container { margin-bottom: 12px; }
+            .welcome-text { font-size: 17px; }
+            .welcome-subtitle { font-size: 13px; margin-bottom: 16px; }
+            .form-group { margin-bottom: 12px; }
+            .form-group input { padding: 12px 14px 12px 44px; font-size: 14px; }
+            .login-btn { padding: 14px; font-size: 14px; }
+            .hint-text { margin-top: 12px; padding-top: 12px; font-size: 12px; }
+        }
+
+                @media (max-width: 768px) {
+            .login-card {
+                padding: 28px 24px;
                 border-radius: 24px;
             }
 
+            .logo-container {
+                margin-bottom: 16px;
+            }
+
             .logo {
-                font-size: 44px;
+                font-size: 40px;
             }
 
             .welcome-text {
-                font-size: 20px;
+                font-size: 18px;
+            }
+
+            .welcome-subtitle {
+                margin-bottom: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .form-group input {
+                padding: 13px 16px 13px 48px;
+            }
+
+            .login-btn {
+                padding: 15px;
+            }
+
+            .hint-text {
+                margin-top: 16px;
+                padding-top: 16px;
             }
 
             .top-bar {
@@ -554,6 +607,207 @@
             .app-title {
                 font-size: 24px;
             }
+        }
+
+        /* ── PWA Install Modal ── */
+        #pwaInstallModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 99999;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 0;
+            backdrop-filter: blur(4px);
+            animation: pwaModalBgIn 0.3s ease;
+        }
+        #pwaInstallModal.visible {
+            display: flex;
+        }
+        @keyframes pwaModalBgIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        .pwa-modal-sheet {
+            background: white;
+            border-radius: 28px 28px 0 0;
+            width: 100%;
+            max-width: 540px;
+            padding: 0 0 env(safe-area-inset-bottom, 20px) 0;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+            animation: pwaSheetUp 0.35s cubic-bezier(0.32,0.72,0,1);
+            overflow: hidden;
+        }
+        @keyframes pwaSheetUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .pwa-modal-header {
+            background: linear-gradient(135deg, #2d2654, #6b5b95);
+            padding: 22px 24px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .pwa-modal-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pwa-modal-title-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .pwa-modal-close {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .pwa-modal-body {
+            padding: 20px 24px 24px;
+        }
+        .pwa-modal-subtitle {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        /* Tab switcher iOS / Android */
+        .pwa-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .pwa-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: #64748b;
+        }
+        .pwa-tab.active {
+            background: white;
+            color: #2d2654;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .pwa-panel { display: none; }
+        .pwa-panel.active { display: block; }
+        .pwa-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .pwa-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .pwa-step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2d2654, #6b5b95);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .pwa-step-content {}
+        .pwa-step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 2px;
+        }
+        .pwa-step-desc {
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .pwa-step-desc strong {
+            color: #2d2654;
+        }
+        .pwa-step-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 7px;
+            padding: 2px 7px;
+            font-size: 15px;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+        .pwa-modal-footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            gap: 10px;
+        }
+        .pwa-btn-primary {
+            flex: 1;
+            padding: 13px;
+            background: linear-gradient(135deg, #2d2654, #6b5b95);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .pwa-btn-secondary {
+            padding: 13px 16px;
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        /* Arrow indicator per iOS: punta verso il basso (share button) */
+        .pwa-arrow-ios {
+            display: flex;
+            justify-content: center;
+            margin-top: 12px;
+        }
+        .pwa-arrow-ios svg {
+            opacity: 0.4;
         }
     </style>
 </head>
@@ -600,6 +854,110 @@
     </div>
 
     <div class="bg-animation"></div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         PWA INSTALL MODAL - Istruzioni schermata Home
+    ════════════════════════════════════════════════════════ -->
+    <div id="pwaInstallModal" onclick="pwaModalBgClick(event)">
+        <div class="pwa-modal-sheet">
+            <div class="pwa-modal-header">
+                <div class="pwa-modal-title">
+                    <div class="pwa-modal-title-icon">📲</div>
+                    Aggiungi alla schermata Home
+                </div>
+                <button class="pwa-modal-close" onclick="closePwaModal()">✕</button>
+            </div>
+            <div class="pwa-modal-body">
+                <div class="pwa-modal-subtitle">
+                    Installa MIDA come app per un'esperienza ottimale: accesso rapido, schermo intero e nessuna barra del browser.
+                </div>
+
+                <!-- Tab iOS / Android -->
+                <div class="pwa-tabs">
+                    <button class="pwa-tab active" id="tabIos" onclick="pwaShowTab('ios')">🍎 iPhone / iPad</button>
+                    <button class="pwa-tab" id="tabAndroid" onclick="pwaShowTab('android')">🤖 Android</button>
+                </div>
+
+                <!-- Panel iOS -->
+                <div class="pwa-panel active" id="panelIos">
+                    <div class="pwa-steps">
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">1</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Apri in Safari</div>
+                                <div class="pwa-step-desc">Assicurati di usare <strong>Safari</strong> — altri browser non supportano l'installazione su iOS.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">2</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Tocca il pulsante Condividi</div>
+                                <div class="pwa-step-desc">Nella barra in basso tocca l'icona <span class="pwa-step-icon">⬆</span> <strong>Condividi</strong>.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">3</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Aggiungi a Home</div>
+                                <div class="pwa-step-desc">Scorri verso il basso e tocca <strong>«Aggiungi a schermata Home»</strong>, poi conferma con <strong>Aggiungi</strong>.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">4</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Lancia MIDA dalla Home</div>
+                                <div class="pwa-step-desc">Troverai l'icona <strong>MIDA Sales</strong> nella tua schermata Home. Si apre in schermo intero come un'app nativa.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pwa-arrow-ios">
+                        <svg width="32" height="20" viewBox="0 0 32 20"><path d="M16 18 L4 4 L28 4 Z" fill="#6b5b95"/></svg>
+                    </div>
+                </div>
+
+                <!-- Panel Android -->
+                <div class="pwa-panel" id="panelAndroid">
+                    <div class="pwa-steps">
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">1</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Apri in Chrome</div>
+                                <div class="pwa-step-desc">Usa <strong>Google Chrome</strong> per la migliore esperienza di installazione su Android.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">2</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Tocca il menu ⋮</div>
+                                <div class="pwa-step-desc">Tocca i tre punti <span class="pwa-step-icon">⋮</span> in alto a destra nella barra di Chrome.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">3</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Aggiungi a schermata Home</div>
+                                <div class="pwa-step-desc">Seleziona <strong>«Aggiungi a schermata Home»</strong> oppure <strong>«Installa app»</strong> se disponibile.</div>
+                            </div>
+                        </div>
+                        <div class="pwa-step">
+                            <div class="pwa-step-num">4</div>
+                            <div class="pwa-step-content">
+                                <div class="pwa-step-title">Conferma e avvia</div>
+                                <div class="pwa-step-desc">Tocca <strong>Installa</strong> o <strong>Aggiungi</strong> nella finestra di conferma. L'icona <strong>MIDA Sales</strong> apparirà nella Home.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pwa-modal-footer">
+                    <button class="pwa-btn-primary" onclick="closePwaModal()">✓ Ho capito</button>
+                    <button class="pwa-btn-secondary" onclick="closePwaModalForever()">Non mostrare più</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <div class="container login-active">
         <!-- Login Screen -->
@@ -892,6 +1250,67 @@
             sessionStorage.setItem('splashShown', '1');
         }
 
+
+        // ════════════════════════════════════════════
+        // PWA Install Modal — Istruzioni schermata Home
+        // ════════════════════════════════════════════
+
+        function openPwaModal() {
+            const modal = document.getElementById('pwaInstallModal');
+            modal.classList.add('visible');
+            // Auto-detect platform e mostra il tab corretto
+            const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            pwaShowTab(isIos ? 'ios' : 'android');
+        }
+
+        function closePwaModal() {
+            const modal = document.getElementById('pwaInstallModal');
+            modal.classList.remove('visible');
+        }
+
+        function closePwaModalForever() {
+            localStorage.setItem('pwaModalDismissed', '1');
+            closePwaModal();
+        }
+
+        function pwaModalBgClick(e) {
+            if (e.target === document.getElementById('pwaInstallModal')) closePwaModal();
+        }
+
+        function pwaShowTab(tab) {
+            document.getElementById('tabIos').classList.toggle('active', tab === 'ios');
+            document.getElementById('tabAndroid').classList.toggle('active', tab === 'android');
+            document.getElementById('panelIos').classList.toggle('active', tab === 'ios');
+            document.getElementById('panelAndroid').classList.toggle('active', tab === 'android');
+        }
+
+        function initPwaModal() {
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            if (!isMobile) return;
+
+            // Non mostrare se già dismesso in modo permanente
+            if (localStorage.getItem('pwaModalDismissed') === '1') return;
+
+            // Non mostrare se già installata come PWA (standalone mode)
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                               || window.navigator.standalone === true;
+            if (isStandalone) return;
+
+            // Non mostrare in questa sessione se già vista
+            if (sessionStorage.getItem('pwaModalShown') === '1') return;
+
+            // Attendi che la splash scompaia (se presente) prima di mostrare il modal
+            const delay = sessionStorage.getItem('splashShown') === '1' ? 800 : 2200;
+            setTimeout(() => {
+                // Mostra solo se siamo ancora nella schermata di login (non dopo il login)
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen && loginScreen.style.display !== 'none') {
+                    sessionStorage.setItem('pwaModalShown', '1');
+                    openPwaModal();
+                }
+            }, delay);
+        }
+
         function initSplash() {
             // Mostra splash solo su mobile e solo se non già mostrata in sessione
             const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -906,6 +1325,7 @@
 
         // Chiamata all'avvio (prima di checkAuth)
         window.addEventListener('DOMContentLoaded', initSplash);
+        window.addEventListener('DOMContentLoaded', initPwaModal);
 
         window.addEventListener('load', checkAuth);
     </script>
