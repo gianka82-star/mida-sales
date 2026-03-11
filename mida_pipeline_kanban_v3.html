@@ -328,6 +328,8 @@
             border-bottom: 1px solid var(--mida-light-gray);
             font-size: 14px;
             color: var(--mida-navy);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         .am-option:hover, .am-search-opt:hover {
@@ -1569,7 +1571,8 @@
                 <div style="position: relative; flex: 1; max-width: 320px;">
                     <input type="text" id="amSearchOverlay" placeholder="🔍 Cerca o seleziona AM..."
                         autocomplete="off"
-                        style="width: 100%; padding: 8px 12px; border: 2px solid var(--mida-border); border-radius: 8px; font-size: 14px; cursor: pointer; box-sizing: border-box;"
+                        inputmode="search"
+                        style="width: 100%; padding: 8px 12px; border: 2px solid var(--mida-border); border-radius: 8px; font-size: 16px; cursor: pointer; box-sizing: border-box;"
                         oninput="filterAmSelect(this.value)"
                         onfocus="showAmDropdown()"
                         onblur="hideAmDropdown()"
@@ -3527,7 +3530,8 @@
                 if (wrapper) {
                     wrapper.innerHTML = users.map(u =>
                         `<div class="am-search-opt" data-value="${u.am_key}"
-                            onmousedown="selectAMFromList('${u.am_key}','${u.full_name.replace(/'/g, "\\'")}')">
+                            onmousedown="selectAMFromList('${u.am_key}','${u.full_name.replace(/'/g, "\\'")}');event.preventDefault();"
+                            ontouchstart="selectAMFromList('${u.am_key}','${u.full_name.replace(/'/g, "\\'")}');event.preventDefault();">
                             ${u.full_name}
                         </div>`
                     ).join('');
