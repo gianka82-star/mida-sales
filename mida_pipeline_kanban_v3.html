@@ -5659,53 +5659,23 @@
                     'viola.dadda': 'viola_dadda'
                 };
 
-                const amNames = {
-                    'alessandro_giandolfo': 'Alessandro Giandolfo',
-                    'alessia_mistretta': 'Alessia Mistretta',
-                    'beatrice_conte': 'Beatrice Conte',
-                    'caterina_sonato': 'Caterina Sonato',
-                    'daniele_dal_pozzo': 'Daniele Dal Pozzo',
-                    'daniele_de_felice': 'Daniele De Felice',
-                    'daniele_selmi': 'Daniele Selmi',
-                    'eleonora_mauri': 'Eleonora Mauri',
-                    'elisa_rando': 'Elisa Rando',
-                    'enrico_gambi': 'Enrico Gambi',
-                    'fulvia_amico': 'Fulvia Amico di Meane',
-                    'giancarlo_novara': 'Giancarlo Novara',
-                    'gregorio_macchi': 'Gregorio Macchi',
-                    'greta_pepi': 'Greta Pepi',
-                    'giulia_bussi': 'Giulia Bussi',
-                    'isabella_grandi': 'Isabella Grandi',
-                    'jacopo_melloni': 'Jacopo Melloni',
-                    'laura_pieralisi': 'Laura Virginia Pieralisi',
-                    'luca_chieregato': 'Luca Chieregato',
-                    'marco_poggi': 'Marco Poggi',
-                    'mariavittoria_gennaro': 'Mariavittoria Gennaro',
-                    'marta_coser': 'Marta Coser',
-                    'michela_guardino': 'Michela Guardino',
-                    'najoua_meddad': 'Najoua Meddad',
-                    'nathalie_ospina': 'Nathalie Giselle Ospina Cruz',
-                    'pierpaolo_griva': 'Pierpaolo Peretti Griva',
-                    'rudra_chakraborty': 'Rudra Chakraborty',
-                    'sara_reggiani': 'Sara Maria Reggiani',
-                    'silvio_trombetta': 'Silvio Trombetta',
-                    'susanna_gansin': 'Susanna Enrico Gansin',
-                    'viola_dadda': 'Viola Dadda'
-                };
-
-                // Prima prova lookup diretto, poi fallback con replace
+                // Usa AM_NAMES_MAP già popolata da loadActiveAMs (await prima di autoSelectAM)
                 const amKey = usernameToKey[amParam.toLowerCase()] || amParam.replace(/\./g, '_');
                 console.log('🔑 AM Key convertito:', amKey);
-                
-                const amFullName = amNames[amKey];
-                
+
+                // Cerca in AM_NAMES_MAP (Supabase) — più aggiornato della mappa hardcoded
+                const amFullName = AM_NAMES_MAP[amKey];
+
                 if (amFullName) {
-                    console.log('✅ AM trovato:', amFullName);
+                    console.log('✅ AM trovato in AM_NAMES_MAP:', amFullName);
                     const overlay = document.getElementById('amSearchOverlay');
                     if (overlay) overlay.value = amFullName;
                     selectAccountManager(amKey, amFullName);
                 } else {
-                    console.log('⚠️ AM non trovato nella mappa:', amKey);
+                    console.warn('⚠️ AM non trovato in AM_NAMES_MAP per key:', amKey,
+                        '— AM_NAMES_MAP ha', Object.keys(AM_NAMES_MAP).length, 'entries');
+                    // Fallback: mostra dropdown per selezione manuale
+                    setTimeout(() => showAccountManagerDropdown(), 300);
                 }
             } else {
                 console.log('ℹ️ Nessun parametro AM trovato (né URL né sessionStorage)');
