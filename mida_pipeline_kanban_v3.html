@@ -4578,24 +4578,12 @@
         });
 
         function toggleMobileMenu() {
-            const actions = document.getElementById('headerActions');
-            actions.classList.toggle('mobile-open');
+            // hamburgerBtn rimosso — no-op
         }
 
         // Mostra hamburger solo su mobile
         function initMobileMenu() {
-            const btn = document.getElementById('hamburgerBtn');
-            if (window.innerWidth <= 768) {
-                btn.style.display = 'flex';
-            }
-            window.addEventListener('resize', () => {
-                if (window.innerWidth <= 768) {
-                    btn.style.display = 'flex';
-                } else {
-                    btn.style.display = 'none';
-                    document.getElementById('headerActions').classList.remove('mobile-open');
-                }
-            });
+            // hamburgerBtn rimosso — funzione mantenuta per compatibilità, ora no-op
         }
 
         // Generate unique ID
