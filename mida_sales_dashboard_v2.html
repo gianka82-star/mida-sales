@@ -243,6 +243,9 @@
             transition: all 0.3s;
         }
 
+        .kpi-card-icon { display: none; }
+        .kpi-card-text { display: contents; }
+
         .kpi-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.12);
@@ -970,24 +973,58 @@
             }
 
             .kpi-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-bottom: 14px;
             }
 
             .kpi-card {
-                padding: 20px;
+                padding: 11px 13px;
+                border-radius: 10px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                border-left: none;
+                border-top: 4px solid var(--card-color);
+                transform: none !important;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            }
+
+            .kpi-card-icon {
+                display: block;
+                font-size: 20px;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+
+            .kpi-card-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
             }
 
             .kpi-label {
-                font-size: 12px;
+                font-size: 9px;
+                margin-bottom: 1px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .kpi-value {
-                font-size: 28px;
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .kpi-subtitle {
-                font-size: 13px;
+                font-size: 10px;
+                margin-top: 1px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .tabs-header {
@@ -1444,13 +1481,7 @@
                         <button class="btn btn-secondary" onclick="openBenchmarkModal()">
                             🎯 Benchmark
                         </button>
-                        <button class="btn btn-secondary" onclick="openPushReminderModal()" style="background: var(--mida-pink); color: white;">
-                            🔔 Invia Reminder
-                        </button>
-                        <button class="btn btn-secondary" onclick="clearData()">
-                            🗑️ Reset Vista
-                        </button>
-                    </div>
+</div>
                     
                     <!-- Mobile: hamburger menu -->
                     <div class="mobile-menu">
@@ -1465,10 +1496,7 @@
                             <button onclick="openBenchmarkModal(); toggleMobileMenu()">
                                 🎯 Benchmark
                             </button>
-                            <button onclick="clearData(); toggleMobileMenu()">
-                                🗑️ Reset Vista
-                            </button>
-                        </div>
+</div>
                     </div>
                 </div>
             </div>
@@ -1515,31 +1543,35 @@
         <!-- KPI Cards -->
         <div class="kpi-grid">
             <div class="kpi-card" style="--card-color: var(--mida-purple);">
-                <div class="kpi-label">Totale Pipeline</div>
-                <div class="kpi-value" id="totalPipeline">€ 0</div>
-                <div class="kpi-subtitle">
-                    <span id="totalDealsCount">0 opportunità</span>
+                <span class="kpi-card-icon">💰</span>
+                <div class="kpi-card-text">
+                    <div class="kpi-label">Totale Pipeline</div>
+                    <div class="kpi-value" id="totalPipeline">€ 0</div>
+                    <div class="kpi-subtitle"><span id="totalDealsCount">0 opportunità</span></div>
                 </div>
             </div>
             <div class="kpi-card" style="--card-color: var(--mida-pink);">
-                <div class="kpi-label">Weighted Pipeline</div>
-                <div class="kpi-value" id="weightedPipeline">€ 0</div>
-                <div class="kpi-subtitle">
-                    Forecast ponderato
+                <span class="kpi-card-icon">⚖️</span>
+                <div class="kpi-card-text">
+                    <div class="kpi-label">Weighted Pipeline</div>
+                    <div class="kpi-value" id="weightedPipeline">€ 0</div>
+                    <div class="kpi-subtitle">Forecast ponderato</div>
                 </div>
             </div>
             <div class="kpi-card" style="--card-color: var(--mida-coral);">
-                <div class="kpi-label">Pipeline 2026</div>
-                <div class="kpi-value" id="pipeline2026">€ 0</div>
-                <div class="kpi-subtitle">
-                    Distribuzione quarter
+                <span class="kpi-card-icon">📅</span>
+                <div class="kpi-card-text">
+                    <div class="kpi-label">Pipeline 2026</div>
+                    <div class="kpi-value" id="pipeline2026">€ 0</div>
+                    <div class="kpi-subtitle">Distribuzione quarter</div>
                 </div>
             </div>
             <div class="kpi-card" style="--card-color: var(--mida-orange);">
-                <div class="kpi-label">WON YTD</div>
-                <div class="kpi-value" id="totalWon">€ 0</div>
-                <div class="kpi-subtitle">
-                    <span id="wonDealsCount">0 deal</span>
+                <span class="kpi-card-icon">🏆</span>
+                <div class="kpi-card-text">
+                    <div class="kpi-label">WON YTD</div>
+                    <div class="kpi-value" id="totalWon">€ 0</div>
+                    <div class="kpi-subtitle"><span id="wonDealsCount">0 deal</span></div>
                 </div>
             </div>
         </div>
@@ -3799,6 +3831,12 @@
     const SUPABASE_KEY_PUSH = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
 
     function openPushReminderModal() {
+      const pwd = prompt('🔒 Password admin richiesta:');
+      if (pwd === null) return; // annullato
+      if (pwd !== 'midaadmin2026') {
+        alert('❌ Password errata.');
+        return;
+      }
       const list = document.getElementById('pushAMList');
       list.innerHTML = PUSH_AM_LIST.map(am => `
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; color:#374151; padding:4px 6px; border-radius:6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">

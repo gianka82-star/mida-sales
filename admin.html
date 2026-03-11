@@ -367,6 +367,59 @@
         </div>
 
 
+
+        <!-- ── NOTIFICA PUSH PANEL ──────────────────────── -->
+        <div class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>🔔 Reminder Push</h2>
+                    <p>Invia una notifica push agli Account Manager — richiede che abbiano attivato i permessi nella pipeline</p>
+                </div>
+            </div>
+
+            <div style="display:grid; gap:16px; max-width:640px;">
+
+                <!-- Destinatari -->
+                <div>
+                    <label style="display:block; font-size:13px; font-weight:600; color:var(--navy); margin-bottom:8px;">Destinatari</label>
+                    <div style="margin-bottom:8px;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; color:#374151;">
+                            <input type="checkbox" id="pushSelectAll" onchange="toggleAllPushAM(this.checked)" style="width:16px; height:16px;">
+                            <strong>Tutti gli AM</strong>
+                        </label>
+                    </div>
+                    <div id="pushAMList" style="max-height:180px; overflow-y:auto; border:1.5px solid var(--border); border-radius:8px; padding:8px; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+                        <span style="color:var(--gray); font-size:13px;">⏳ Caricamento AM...</span>
+                    </div>
+                </div>
+
+                <!-- Titolo -->
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Titolo notifica</label>
+                    <input type="text" id="pushTitle" value="📢 Aggiornamento pipeline richiesto">
+                </div>
+
+                <!-- Messaggio -->
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Messaggio</label>
+                    <textarea id="pushMessage" rows="3"
+                        style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box; resize:vertical; font-family:inherit;"
+                        placeholder="Scrivi il messaggio del reminder...">Aggiorna la tua pipeline con le opportunità più recenti.</textarea>
+                </div>
+
+                <!-- Risultato -->
+                <div id="pushResult" style="display:none; padding:10px 14px; border-radius:8px; font-size:14px;"></div>
+
+                <!-- Invio -->
+                <div>
+                    <button id="pushSendBtn" onclick="sendManualReminder()"
+                        class="btn btn-primary" style="background:var(--pink); min-width:160px;">
+                        🔔 Invia Notifica
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ── LOG & BACKUP PANEL ─────────────────────────── -->
         <div class="panel">
             <div class="panel-header">
@@ -611,6 +664,7 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'block';
         await loadUsers();
+        loadPushAMList();
         loadLogsData();
         loadBackupsData();
     }
@@ -1151,6 +1205,99 @@
             a.download = `MIDA_Backup_${weekLabel}.csv`;
             a.click();
         } catch(e) { toast('Errore CSV: '+e.message,'error'); }
+    }
+
+
+
+    // ═══════════════════════════════════════════════════════
+    // NOTIFICA PUSH
+    // ═══════════════════════════════════════════════════════
+
+    const SUPABASE_URL_PUSH = 'https://pvnymhvuextryeoxgave.supabase.co';
+    const SUPABASE_KEY_PUSH = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
+
+    function loadPushAMList() {
+        // Carica AM attivi da Supabase (riusa la lista già caricata da loadUsers)
+        const list = document.getElementById('pushAMList');
+        if (!list) return;
+        if (users && users.length > 0) {
+            renderPushAMList(users.filter(u => u.active));
+        } else {
+            // Fallback: carica direttamente
+            sbGet('mida_users', '?active=eq.true&order=full_name.asc')
+                .then(rows => renderPushAMList(rows || []))
+                .catch(() => { list.innerHTML = '<span style="color:var(--red)">Errore caricamento AM</span>'; });
+        }
+    }
+
+    function renderPushAMList(activeUsers) {
+        const list = document.getElementById('pushAMList');
+        if (!list) return;
+        list.innerHTML = activeUsers.map(u => `
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#374151;padding:4px 6px;border-radius:6px;"
+                   onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">
+                <input type="checkbox" class="push-am-check" value="${u.am_key}" style="width:14px;height:14px;">
+                ${u.full_name}
+            </label>
+        `).join('');
+    }
+
+    function toggleAllPushAM(checked) {
+        document.querySelectorAll('.push-am-check').forEach(cb => cb.checked = checked);
+    }
+
+    async function sendManualReminder() {
+        const selectedKeys = [...document.querySelectorAll('.push-am-check:checked')].map(cb => cb.value);
+        const title   = document.getElementById('pushTitle').value.trim();
+        const message = document.getElementById('pushMessage').value.trim();
+        const resultEl = document.getElementById('pushResult');
+
+        if (!selectedKeys.length) { toast('Seleziona almeno un AM', 'error'); return; }
+        if (!message) { toast('Inserisci un messaggio', 'error'); return; }
+
+        const btn = document.getElementById('pushSendBtn');
+        btn.disabled = true; btn.textContent = '⏳ Invio in corso...';
+        resultEl.style.display = 'none';
+
+        try {
+            const res = await fetch(`${SUPABASE_URL_PUSH}/functions/v1/send-manual-reminder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY_PUSH,
+                    'Authorization': `Bearer ${SUPABASE_KEY_PUSH}`
+                },
+                body: JSON.stringify({ amKeys: selectedKeys, title, message })
+            });
+
+            let data = {};
+            try { data = await res.json(); } catch(e) {}
+
+            resultEl.style.display = 'block';
+            if (res.ok) {
+                const sentCount = data.sent ?? 0;
+                const total     = data.total ?? selectedKeys.length;
+                const expired   = data.expired > 0 ? ` (${data.expired} subscription scadute rimosse)` : '';
+                if (sentCount === 0 && total === 0) {
+                    resultEl.style.cssText = 'display:block;background:#fef3c7;color:#92400e;padding:10px 14px;border-radius:8px;font-size:14px;';
+                    resultEl.textContent = '⚠️ Nessun AM ha attivato le notifiche push.';
+                } else {
+                    resultEl.style.cssText = 'display:block;background:#d1fae5;color:#065f46;padding:10px 14px;border-radius:8px;font-size:14px;';
+                    resultEl.textContent = `✅ Notifica inviata a ${sentCount} AM su ${total} registrati.${expired}`;
+                }
+            } else if (res.status === 401) {
+                resultEl.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;';
+                resultEl.innerHTML = '🔒 Errore 401. Esegui: <code>supabase functions deploy send-manual-reminder --no-verify-jwt</code>';
+            } else {
+                resultEl.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:14px;';
+                resultEl.textContent = `Errore ${res.status}: ` + (data.error || data.message || 'risposta non valida');
+            }
+        } catch(err) {
+            resultEl.style.cssText = 'display:block;background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:14px;';
+            resultEl.textContent = err.message?.includes('fetch') ? '🌐 Errore di connessione.' : 'Errore: ' + err.message;
+        } finally {
+            btn.disabled = false; btn.textContent = '🔔 Invia Notifica';
+        }
     }
 
 

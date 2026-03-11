@@ -121,6 +121,11 @@
             transform: translateY(-2px);
         }
 
+        /* Icona 🔄 mobile: nascosta per default, visibile solo su mobile */
+        .mobile-refresh-btn {
+            display: none;
+        }
+
         .header-actions {
             display: flex;
             gap: 12px;
@@ -251,8 +256,50 @@
                 min-height: 36px;
             }
 
+
+            /* Icona aggiorna mobile — sostituisce il bottone testuale */
+            .mobile-refresh-btn {
+                display: none;
+                background: none;
+                border: none;
+                font-size: 22px;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 8px;
+                line-height: 1;
+                transition: transform 0.3s ease, opacity 0.2s;
+                opacity: 0.75;
+            }
+            .mobile-refresh-btn:active {
+                transform: rotate(180deg);
+                opacity: 1;
+            }
+            .mobile-refresh-btn.spinning {
+                animation: spin360 0.6s linear;
+            }
+            @keyframes spin360 {
+                from { transform: rotate(0deg); }
+                to   { transform: rotate(360deg); }
+            }
             /* Nasconde nel menu hamburger i bottoni desktop-only */
             .mobile-hidden {
+                display: none !important;
+            }
+
+            /* Mostra icona aggiorna su mobile */
+            .mobile-refresh-btn {
+                display: flex !important;
+            }
+
+            /* Nasconde il bottone ⓘ su mobile: hover non esiste,
+               il tooltip a posizione assoluta darebbe problemi di layout */
+            .hdr-info-btn {
+                display: none !important;
+            }
+
+            /* Assicura che nessun tooltip sia visibile su mobile,
+               anche se .visible fosse stato aggiunto via JS */
+            .hdr-tooltip {
                 display: none !important;
             }
             .view-toggle-bar {
@@ -307,6 +354,9 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-left: 3px solid var(--color);
         }
+
+        .stat-card-icon { display: none; }  /* nascosta su desktop */
+        .stat-card-text { display: contents; } /* trasparente su desktop */
 
         .stat-label {
             font-size: 12px;
@@ -1142,20 +1192,47 @@
             }
 
             .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-bottom: 14px;
             }
 
             .stat-card {
-                padding: 16px;
+                padding: 11px 13px;
+                border-radius: 10px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                border-left: none;
+                border-top: 3px solid var(--color);
+            }
+
+            .stat-card-icon {
+                font-size: 20px;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+
+            .stat-card-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
             }
 
             .stat-label {
-                font-size: 11px;
+                font-size: 9px;
+                margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .stat-value {
-                font-size: 20px;
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .tabs-header {
@@ -1302,10 +1379,6 @@
                 font-size: 18px;
             }
 
-            .stat-value {
-                font-size: 18px;
-            }
-
             .tab-btn {
                 min-width: 120px;
                 padding: 14px 16px;
@@ -1333,7 +1406,92 @@
                 padding: 16px;
             }
         }
-    </style>
+    
+        /* ── HEADER BUTTON INFO TOOLTIPS ─────────────────── */
+        .hdr-btn-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .hdr-info-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255,255,255,0.55);
+            font-size: 14px;
+            line-height: 1;
+            padding: 2px 3px;
+            border-radius: 4px;
+            transition: color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .hdr-info-btn:hover {
+            color: white;
+        }
+
+        /* Bottone (i) adiacente a bottoni non bianchi (es. Aggiorna) */
+        .hdr-btn-wrap:last-child .hdr-info-btn {
+            color: rgba(107,91,149,0.6);
+        }
+        .hdr-btn-wrap:last-child .hdr-info-btn:hover {
+            color: var(--mida-purple);
+        }
+
+        .hdr-tooltip {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #1e1b2e;
+            color: #e5e7eb;
+            font-size: 12px;
+            line-height: 1.55;
+            padding: 11px 14px;
+            border-radius: 10px;
+            white-space: nowrap;
+            min-width: 190px;
+            z-index: 10000;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+            pointer-events: none;
+        }
+
+        .hdr-tooltip.visible {
+            display: block;
+        }
+
+        .hdr-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            right: 10px;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid #1e1b2e;
+        }
+
+        .tooltip-admin {
+            display: inline-block;
+            margin-top: 7px;
+            background: #7c3aed;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        /* Hover su desktop — in aggiunta al click */
+        @media (hover: hover) and (pointer: fine) {
+            .hdr-btn-wrap:hover .hdr-tooltip {
+                display: block;
+            }
+        }
+
+</style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -1351,25 +1509,59 @@
                     </a>
                 </div>
                 <div class="header-actions" id="headerActions">
-<button class="btn btn-secondary mobile-hidden" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
-                        📤 Importa Excel
+<div class="hdr-btn-wrap mobile-hidden">
+                        <button class="btn btn-secondary" onclick="openImportModal()" style="background:#6b5b95; color:white; border-color:#6b5b95;">
+                            📤 Importa Excel
+                        </button>
+                        <button class="hdr-info-btn" onclick="toggleTooltip('tt-import')" title="Info">ⓘ</button>
+                        <div class="hdr-tooltip" id="tt-import">
+                            <strong>Importa Excel</strong><br>
+                            Carica il foglio "DB PIPE" dall'export Excel di MIDA.<br>
+                            Aggiorna o crea deal per tutti gli AM.<br>
+                            <span class="tooltip-admin">🔒 Solo Admin</span>
+                        </div>
+                    </div>
+                    <div class="hdr-btn-wrap mobile-hidden">
+                        <button class="btn btn-secondary" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;">
+                            🧹 Pulizia
+                        </button>
+                        <button class="hdr-info-btn" onclick="toggleTooltip('tt-cleanup')" title="Info">ⓘ</button>
+                        <div class="hdr-tooltip" id="tt-cleanup">
+                            <strong>Pulizia deal vuoti</strong><br>
+                            Rimuove i deal senza cliente o owner,<br>
+                            spesso creati per errore.<br>
+                            <span class="tooltip-admin">🔒 Solo Admin</span>
+                        </div>
+                    </div>
+                    <div class="hdr-btn-wrap mobile-hidden">
+                        <button class="btn btn-secondary" onclick="exportToExcel()">
+                            📥 Esporta CSV
+                        </button>
+                        <button class="hdr-info-btn" onclick="toggleTooltip('tt-export')" title="Info">ⓘ</button>
+                        <div class="hdr-tooltip" id="tt-export">
+                            <strong>Esporta CSV</strong><br>
+                            Scarica le tue opportunità<br>
+                            in formato Excel/CSV.
+                        </div>
+                    </div>
+                    <div class="hdr-btn-wrap mobile-hidden">
+                        <button class="btn btn-primary" onclick="loadPipeline()" style="background: var(--mida-purple);">
+                            🔄 Aggiorna
+                        </button>
+                        <button class="hdr-info-btn" onclick="toggleTooltip('tt-reload')" title="Info">ⓘ</button>
+                        <div class="hdr-tooltip" id="tt-reload">
+                            <strong>Aggiorna dati</strong><br>
+                            Ricarica la pipeline dal database.<br>
+                            Utile se un collega ha modificato<br>
+                            deal in co-accounting.
+                        </div>
+                    </div>
+                    <button class="mobile-refresh-btn" onclick="loadPipeline()" title="Aggiorna pipeline" id="mobileRefreshBtn">
+                        🔄
                     </button>
-                    <button class="btn btn-secondary mobile-hidden" onclick="openCleanupModal()" style="background:#ef4444; color:white; border-color:#ef4444; font-size:12px;" title="Rimuovi deal vuoti senza owner o cliente">
-                        🧹 Pulizia deal vuoti
-                    </button>
-                    <button class="btn btn-secondary mobile-hidden" onclick="exportToExcel()">
-                        📥 Esporta CSV
-                    </button>
-                    <button class="btn btn-success" onclick="forceSave()" style="background: var(--mida-orange);">
-                        💾 Salva su Database
-                    </button>
-                    <button class="btn btn-primary" onclick="loadPipeline()" style="background: var(--mida-purple);">
-                        🔄 Ricarica Dati
-                    </button>
+
                 </div>
-                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleMobileMenu()" style="display:none;">
-                    ☰ Menu
-                </button>
+
             </div>
             
             <div class="user-info">
@@ -1413,20 +1605,32 @@
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card" style="--color: var(--mida-purple);">
-                <div class="stat-label">Totale Pipeline</div>
-                <div class="stat-value" id="totalPipeline">€ 0</div>
+                <span class="stat-card-icon">💰</span>
+                <div class="stat-card-text">
+                    <div class="stat-label">Totale Pipeline</div>
+                    <div class="stat-value" id="totalPipeline">€ 0</div>
+                </div>
             </div>
             <div class="stat-card" style="--color: var(--mida-pink);">
-                <div class="stat-label">Opportunità Attive</div>
-                <div class="stat-value" id="totalDeals">0</div>
+                <span class="stat-card-icon">📋</span>
+                <div class="stat-card-text">
+                    <div class="stat-label">Opportunità Attive</div>
+                    <div class="stat-value" id="totalDeals">0</div>
+                </div>
             </div>
             <div class="stat-card" style="--color: var(--mida-coral);">
-                <div class="stat-label">Weighted Pipeline</div>
-                <div class="stat-value" id="weightedPipeline">€ 0</div>
+                <span class="stat-card-icon">⚖️</span>
+                <div class="stat-card-text">
+                    <div class="stat-label">Weighted Pipeline</div>
+                    <div class="stat-value" id="weightedPipeline">€ 0</div>
+                </div>
             </div>
             <div class="stat-card" style="--color: var(--mida-orange);">
-                <div class="stat-label">WON YTD</div>
-                <div class="stat-value" id="totalWon">€ 0</div>
+                <span class="stat-card-icon">🏆</span>
+                <div class="stat-card-text">
+                    <div class="stat-label">WON YTD</div>
+                    <div class="stat-value" id="totalWon">€ 0</div>
+                </div>
             </div>
         </div>
 
@@ -2003,6 +2207,13 @@
 
         // Load pipeline for current AM
         async function loadPipeline() {
+            const mobileBtn = document.getElementById('mobileRefreshBtn');
+            if (mobileBtn) {
+                mobileBtn.classList.remove('spinning');
+                void mobileBtn.offsetWidth; // reflow per restart animation
+                mobileBtn.classList.add('spinning');
+                setTimeout(() => mobileBtn.classList.remove('spinning'), 650);
+            }
             try {
                 await loadFromLocalStorage();
             } catch(e) {
@@ -4344,6 +4555,23 @@
                 draggedElement = null;
             });
         }
+
+
+        function toggleTooltip(id) {
+            // Chiudi tutti gli altri
+            document.querySelectorAll('.hdr-tooltip').forEach(t => {
+                if (t.id !== id) t.classList.remove('visible');
+            });
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('visible');
+        }
+
+        // Chiudi tooltip cliccando fuori
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.hdr-btn-wrap')) {
+                document.querySelectorAll('.hdr-tooltip').forEach(t => t.classList.remove('visible'));
+            }
+        });
 
         function toggleMobileMenu() {
             const actions = document.getElementById('headerActions');
