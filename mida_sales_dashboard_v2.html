@@ -516,6 +516,9 @@
             transition: all 0.3s;
         }
 
+        .quarter-card-icon { display: none; }
+        .quarter-card-text { display: contents; }
+
         .quarter-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.15);
@@ -1134,20 +1137,59 @@
 
             /* Quarter Grid Mobile */
             .quarter-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-bottom: 14px;
             }
 
             .quarter-card {
-                padding: 20px;
+                padding: 11px 13px;
+                border-radius: 10px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+                border-top: 4px solid var(--quarter-color);
+                text-align: left;
+                transform: none !important;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            }
+
+            .quarter-card-icon {
+                display: block;
+                font-size: 20px;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+
+            .quarter-card-text {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+
+            .quarter-label {
+                font-size: 9px;
+                margin-bottom: 1px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .quarter-value {
-                font-size: 26px;
+                font-size: 15px;
+                margin-bottom: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .quarter-deals {
-                font-size: 13px;
+                font-size: 10px;
+                margin-top: 1px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             /* Tables Mobile */
@@ -1725,24 +1767,36 @@
                     
                     <div class="quarter-grid">
                         <div class="quarter-card" style="--quarter-color: #6b5b95;">
-                            <div class="quarter-label">Q1 2026</div>
-                            <div class="quarter-value" id="q1-total">€ 0</div>
-                            <div class="quarter-deals" id="q1-deals">0 opportunità</div>
+                            <span class="quarter-card-icon">🌱</span>
+                            <div class="quarter-card-text">
+                                <div class="quarter-label">Q1 2026</div>
+                                <div class="quarter-value" id="q1-total">€ 0</div>
+                                <div class="quarter-deals" id="q1-deals">0 opportunità</div>
+                            </div>
                         </div>
                         <div class="quarter-card" style="--quarter-color: #bc6c8e;">
-                            <div class="quarter-label">Q2 2026</div>
-                            <div class="quarter-value" id="q2-total">€ 0</div>
-                            <div class="quarter-deals" id="q2-deals">0 opportunità</div>
+                            <span class="quarter-card-icon">☀️</span>
+                            <div class="quarter-card-text">
+                                <div class="quarter-label">Q2 2026</div>
+                                <div class="quarter-value" id="q2-total">€ 0</div>
+                                <div class="quarter-deals" id="q2-deals">0 opportunità</div>
+                            </div>
                         </div>
                         <div class="quarter-card" style="--quarter-color: #dd8577;">
-                            <div class="quarter-label">Q3 2026</div>
-                            <div class="quarter-value" id="q3-total">€ 0</div>
-                            <div class="quarter-deals" id="q3-deals">0 opportunità</div>
+                            <span class="quarter-card-icon">🍂</span>
+                            <div class="quarter-card-text">
+                                <div class="quarter-label">Q3 2026</div>
+                                <div class="quarter-value" id="q3-total">€ 0</div>
+                                <div class="quarter-deals" id="q3-deals">0 opportunità</div>
+                            </div>
                         </div>
                         <div class="quarter-card" style="--quarter-color: #ee9955;">
-                            <div class="quarter-label">Q4 2026</div>
-                            <div class="quarter-value" id="q4-total">€ 0</div>
-                            <div class="quarter-deals" id="q4-deals">0 opportunità</div>
+                            <span class="quarter-card-icon">❄️</span>
+                            <div class="quarter-card-text">
+                                <div class="quarter-label">Q4 2026</div>
+                                <div class="quarter-value" id="q4-total">€ 0</div>
+                                <div class="quarter-deals" id="q4-deals">0 opportunità</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1910,17 +1964,22 @@
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Accept': 'application/json',
                         'Range': `${from}-${from + PAGE - 1}`,
                         'Range-Unit': 'items',
                         'Prefer': 'count=none'
                     }
                 });
-                if (!res.ok) throw new Error('Errore caricamento Supabase: ' + res.status);
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => String(res.status));
+                    throw new Error(`Supabase ${res.status}: ${errText}`);
+                }
                 const page = await res.json();
                 all = all.concat(page);
-                if (page.length < PAGE) break; // ultima pagina
+                if (page.length < PAGE) break;
                 from += PAGE;
             }
+            console.log('Dashboard: ' + all.length + ' deal caricati da Supabase');
             return all;
         }
 
@@ -2103,7 +2162,11 @@
                 status.classList.add('active');
                 setTimeout(() => status.classList.remove('active'), 6000);
             } catch(e) {
-                alert('❌ Errore caricamento dati:\n' + e.message);
+                console.error('refreshFromSupabase error:', e.message);
+                const statusText = document.getElementById('importStatusText');
+                const status = document.getElementById('importStatus');
+                if (statusText) statusText.textContent = 'Errore connessione: ' + e.message;
+                if (status) status.classList.add('active');
             } finally {
                 if (btn) { btn.innerHTML = '🔄 Aggiorna Dati'; btn.disabled = false; }
             }
