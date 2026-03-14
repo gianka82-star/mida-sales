@@ -3110,6 +3110,7 @@
             const title = document.getElementById('dealTitle').value.trim();
             const division = document.getElementById('dealDivision').value;
             const dealValueRaw = document.getElementById('dealValue').value.trim();
+            const contacts = getContactsFromForm();
             
             if (!customer) {
                 alert('❌ Opportunità NON salvata\n\n' +
