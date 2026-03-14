@@ -3,7 +3,7 @@
 // Gestisce: cache offline, notifiche push, background sync
 // ============================================================
 
-const CACHE_VERSION = 'mida-v2';
+const CACHE_VERSION = 'mida-v3';
 const CACHE_ASSETS = [
   '/mida-sales/',
   '/mida-sales/index.html',
