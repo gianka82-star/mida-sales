@@ -1961,18 +1961,22 @@
                     
                     <!-- Co-accounting: dropdown sempre visibile, pannello condizionale -->
                     <div class="form-group">
-                        <label class="form-label">🤝 Co-accounting</label>
+                        <label class="form-label">🤝 Share Opportunità</label>
                         <select class="form-input" id="dealCoAccounting" onchange="toggleCoAccountingAM()">
-                            <option value="no">No — gestita solo da me</option>
-                            <option value="yes">Sì — in collaborazione con altri AM</option>
+                            <option value="no">No — gestisco questa opportunità da solo</option>
+                            <option value="yes">Sì — condivido con altri AM</option>
                         </select>
                     </div>
 
                     <!-- Pannello co-account: visibile SOLO se "Sì" -->
                     <div id="coAccountingAMGroup" style="display:none; background:#f8f7ff; border:1.5px solid rgba(107,91,149,0.18); border-radius:12px; padding:16px; margin-top:-8px; margin-bottom:8px;">
                         
-                        <div style="font-size:12px; font-weight:700; color:var(--mida-purple); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--mida-purple); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
                             👥 Distribuzione quote
+                        </div>
+                        <div style="background:linear-gradient(135deg,#f3f0fa,#ede9f7); border:1.5px solid rgba(107,91,149,0.2); border-radius:10px; padding:11px 14px; margin-bottom:14px; font-size:12px; color:#4b3f72; line-height:1.6;">
+                            ℹ️ Condividendo l'opportunità, il valore sarà suddiviso tra te e i co-owner in base alle quote indicate. Ogni AM vedrà il deal nella propria pipeline con il proprio valore proporzionale.<br>
+                            <span style="display:inline-block; margin-top:5px;">⚠️ Solo il <strong>creatore della scheda</strong> può modificare importi e percentuali di share. Gli altri AM co-owner potranno modificare lo <strong>stage</strong> del deal nel kanban.</span>
                         </div>
 
                         <!-- Riga owner principale -->
@@ -2071,6 +2075,39 @@
                 <div class="form-group">
                     <label class="form-label">Note</label>
                     <textarea class="form-textarea" id="dealNotes" placeholder="Aggiungi note, prossimi step, informazioni importanti..."></textarea>
+                </div>
+
+                <!-- ── REFERENTI CLIENTE ── -->
+                <div class="form-group" style="margin-bottom:8px;">
+                    <div id="contactsToggle" onclick="toggleContactsSection()"
+                        style="display:flex; align-items:center; gap:8px; cursor:pointer; padding:10px 14px;
+                               background:#f8f7ff; border:1.5px solid rgba(107,91,149,0.18); border-radius:10px;
+                               user-select:none; transition:background 0.2s;">
+                        <span style="font-size:14px; font-weight:700; color:var(--mida-purple); flex:1;">
+                            👤 Referenti Cliente
+                        </span>
+                        <span id="contactsBadge" style="display:none; background:var(--mida-purple); color:white;
+                            font-size:11px; font-weight:700; padding:2px 7px; border-radius:10px;"></span>
+                        <span id="contactsChevron" style="color:var(--mida-purple); font-size:13px; transition:transform 0.2s;">▼</span>
+                    </div>
+
+                    <div id="contactsSection" style="display:none; background:#f8f7ff;
+                        border:1.5px solid rgba(107,91,149,0.18); border-top:none;
+                        border-radius:0 0 10px 10px; padding:14px 14px 10px;">
+
+                        <div style="font-size:12px; color:#6b7280; margin-bottom:12px;">
+                            Aggiungi fino a 3 referenti dell'azienda cliente (opzionale).
+                        </div>
+
+                        <div id="contactRows" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+                        <button type="button" id="addContactBtn" onclick="addContactRow()"
+                            style="margin-top:10px; background:none; border:1.5px dashed rgba(107,91,149,0.4);
+                                   border-radius:8px; padding:8px 14px; width:100%; color:var(--mida-purple);
+                                   font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+                            + Aggiungi referente
+                        </button>
+                    </div>
                 </div>
 
                 <input type="hidden" id="dealId">
@@ -2394,6 +2431,7 @@
             document.getElementById('dealDate').value = deal.estimatedDate || '';
             document.getElementById('dealStage').value = deal.stage;
             document.getElementById('dealNotes').value = deal.notes || '';
+            populateContactsForm(deal.contacts || []);
             updateQuarterTotal();
 
             // Co-owner info: vista statica (non usa buildCoOwnerPctRows che assume currentAM=owner)
@@ -2496,7 +2534,7 @@
             `;
             banner.innerHTML = `
                 <strong>👁 Vista sola lettura</strong><br>
-                Sei co-owner di questa opportunità. Solo <strong>${ownerName}</strong> può modificarla.${pctInfo}
+                Hai accesso in share su questa opportunità. Solo <strong>${ownerName}</strong> può modificare importi e percentuali. Puoi modificare lo stage trascinando il deal nel kanban.${pctInfo}
             `;
             form.insertBefore(banner, form.firstChild);
 
@@ -2511,6 +2549,7 @@
             const form = document.getElementById('dealForm');
             
             form.reset();
+            resetContactsForm();
             updateQuarterTotal();
             
             if (dealId) {
@@ -2562,6 +2601,7 @@
                     document.getElementById('dealDate').value = deal.estimatedDate || '';
                     document.getElementById('dealStage').value = deal.stage;
                     document.getElementById('dealNotes').value = deal.notes || '';
+                    populateContactsForm(deal.contacts || []);
                     document.getElementById('dealId').value = deal.id;
                     document.getElementById('dealPreviousStage').value = deal.previousStage || '';
                     document.getElementById('dealCreatedAt').value = deal.createdAt;
@@ -3245,6 +3285,7 @@
                 estimatedDate: document.getElementById('dealDate').value,
                 stage: document.getElementById('dealStage').value,
                 notes: document.getElementById('dealNotes').value,
+                contacts: contacts,
                 owner: currentAM,
                 ownerPct: ownerPct,
                 coOwners: selectedCoAMs.length > 0 ? selectedCoAMs : 
@@ -3481,10 +3522,13 @@
         }
 
         // ── NOTIFICA CO-OWNER CAMBIO STAGE ────────────────────
+        // Notifica owner principale + tutti i co-owner, escluso chi ha appena mosso il deal
         async function notifyCoOwnersStageChange(deal, oldStage, newStage) {
             try {
-                const coOwnerKeys = deal.coOwners.map(co => co.name).filter(k => k !== currentAM);
-                if (!coOwnerKeys.length) return;
+                // Raccoglie tutti i partecipanti al deal (owner + co-owner) escluso chi sta modificando
+                const allKeys = [deal.owner, ...(deal.coOwners || []).map(co => co.name)];
+                const recipients = [...new Set(allKeys)].filter(k => k !== currentAM);
+                if (!recipients.length) return;
                 const oldLabel = STAGE_CONFIG[oldStage]?.label || oldStage;
                 const newLabel = STAGE_CONFIG[newStage]?.label || newStage;
                 await fetch('https://pvnymhvuextryeoxgave.supabase.co/functions/v1/coowner-notify', {
@@ -3500,9 +3544,10 @@
                         movedBy: currentAMName || currentAM,
                         oldStage: oldLabel,
                         newStage: newLabel,
-                        coOwnerKeys
+                        coOwnerKeys: recipients
                     })
                 });
+                console.log(`📬 Notifica stage change inviata a: ${recipients.join(', ')}`);
             } catch(e) {
                 console.warn('Notifica co-owner fallita (non bloccante):', e);
             }
@@ -4410,10 +4455,12 @@
                         const newStage = this.dataset.stage;
                         const deal = deals.find(d => d.id === dealId);
                         if (deal && deal.stage !== newStage) {
-                            // Guard: solo il proprietario può spostare il deal
-                            if (deal.owner !== currentAM) {
-                                showSaveIndicator('⚠️ Solo il proprietario può spostare questo deal');
-                                renderKanban(); // ripristina posizione visiva
+                            // Guard: solo owner o co-owner possono spostare il deal
+                            const isOwner   = deal.owner === currentAM;
+                            const isCoOwner = (deal.coOwners || []).some(co => co.name === currentAM);
+                            if (!isOwner && !isCoOwner) {
+                                showSaveIndicator('⚠️ Non hai i permessi per spostare questo deal');
+                                renderKanban();
                                 return;
                             }
                             const oldStage = deal.stage;
@@ -4425,6 +4472,7 @@
                                 deal_id:    deal.id,
                                 deal_title: deal.title,
                                 deal_owner: deal.owner,
+                                moved_by:   currentAM,
                                 old_stage:  oldStage,
                                 new_stage:  newStage
                             });
@@ -4530,9 +4578,11 @@
                     const newStage = container.dataset.stage;
                     const deal = deals.find(d => d.id === dealId);
                     if (deal && deal.stage !== newStage) {
-                        // Guard: solo il proprietario può spostare il deal
-                        if (deal.owner !== currentAM) {
-                            showSaveIndicator('⚠️ Solo il proprietario può spostare questo deal');
+                        // Guard: solo owner o co-owner possono spostare il deal
+                        const isOwnerTch   = deal.owner === currentAM;
+                        const isCoOwnerTch = (deal.coOwners || []).some(co => co.name === currentAM);
+                        if (!isOwnerTch && !isCoOwnerTch) {
+                            showSaveIndicator('⚠️ Non hai i permessi per spostare questo deal');
                             renderKanban();
                             draggedElement = null;
                             return;
@@ -4545,6 +4595,7 @@
                             deal_id:    deal.id,
                             deal_title: deal.title,
                             deal_owner: deal.owner,
+                            moved_by:   currentAM,
                             old_stage:  oldStageTch,
                             new_stage:  newStage,
                             method:     'touch'
@@ -4553,6 +4604,10 @@
                         updateStats();
                         updateQuarterAnalysis();
                         showSaveIndicator('✓ Stage aggiornato');
+                        // Notifica owner + co-owner del cambio stage (escluso chi ha mosso)
+                        if (deal.coOwners && deal.coOwners.length > 0) {
+                            notifyCoOwnersStageChange(deal, oldStageTch, newStage);
+                        }
                     }
                 }
 
@@ -5566,6 +5621,115 @@
 
 
         // Auto-seleziona AM da URL parameter o sessionStorage
+
+        // ══════════════════════════════════════════════════════
+        // REFERENTI CLIENTE
+        // ══════════════════════════════════════════════════════
+        const CONTACT_ROLES = [
+            '', 'Sponsor', 'Decision Maker', 'Champion',
+            'Gatekeeper', 'Utente Finale', 'HR', 'IT', 'Finance', 'Altro'
+        ];
+
+        function toggleContactsSection() {
+            const section = document.getElementById('contactsSection');
+            const chevron = document.getElementById('contactsChevron');
+            const isOpen = section.style.display !== 'none';
+            section.style.display = isOpen ? 'none' : 'block';
+            chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+
+        function addContactRow(name = '', role = '') {
+            const container = document.getElementById('contactRows');
+            const existing = container.querySelectorAll('.contact-row').length;
+            if (existing >= 3) return;
+
+            const idx = Date.now();
+            const row = document.createElement('div');
+            row.className = 'contact-row';
+            row.dataset.idx = idx;
+            row.style.cssText = 'display:flex; align-items:center; gap:8px; background:white; border:1.5px solid rgba(107,91,149,0.2); border-radius:8px; padding:8px 10px;';
+            row.innerHTML = `
+                <input type="text" placeholder="Nome referente" value="${name}"
+                    style="flex:1; border:none; outline:none; font-size:13px; color:var(--mida-navy); background:transparent; min-width:0;"
+                    oninput="updateContactsBadge()"
+                    class="contact-name-input">
+                <select style="border:none; outline:none; font-size:13px; color:var(--mida-gray); background:transparent; cursor:pointer; flex-shrink:0;"
+                    class="contact-role-select">
+                    ${CONTACT_ROLES.map(r => `<option value="${r}" ${r === role ? 'selected' : ''}>${r || '— Ruolo —'}</option>`).join('')}
+                </select>
+                <button type="button" onclick="removeContactRow(this)"
+                    style="background:none; border:none; cursor:pointer; color:#9ca3af; font-size:16px; padding:0 2px; flex-shrink:0; line-height:1;"
+                    title="Rimuovi">×</button>
+            `;
+            container.appendChild(row);
+
+            // Nascondi il bottone se siamo a 3
+            const btn = document.getElementById('addContactBtn');
+            if (container.querySelectorAll('.contact-row').length >= 3) {
+                btn.style.display = 'none';
+            }
+            updateContactsBadge();
+        }
+
+        function removeContactRow(btn) {
+            const row = btn.closest('.contact-row');
+            row.remove();
+            const addBtn = document.getElementById('addContactBtn');
+            if (addBtn) addBtn.style.display = 'block';
+            updateContactsBadge();
+        }
+
+        function updateContactsBadge() {
+            const rows = document.querySelectorAll('.contact-row');
+            const filled = Array.from(rows).filter(r => r.querySelector('.contact-name-input').value.trim()).length;
+            const badge = document.getElementById('contactsBadge');
+            if (badge) {
+                badge.textContent = filled > 0 ? filled : '';
+                badge.style.display = filled > 0 ? 'inline-block' : 'none';
+            }
+        }
+
+        function getContactsFromForm() {
+            const rows = document.querySelectorAll('.contact-row');
+            const contacts = [];
+            rows.forEach(row => {
+                const name = row.querySelector('.contact-name-input').value.trim();
+                const role = row.querySelector('.contact-role-select').value;
+                if (name) contacts.push({ name, role });
+            });
+            return contacts;
+        }
+
+        function populateContactsForm(contacts) {
+            // Svuota righe esistenti
+            const container = document.getElementById('contactRows');
+            container.innerHTML = '';
+            const btn = document.getElementById('addContactBtn');
+            if (btn) btn.style.display = 'block';
+
+            if (contacts && contacts.length > 0) {
+                // Apri la sezione se ci sono referenti
+                const section = document.getElementById('contactsSection');
+                const chevron = document.getElementById('contactsChevron');
+                if (section) section.style.display = 'block';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                contacts.forEach(c => addContactRow(c.name, c.role));
+            }
+            updateContactsBadge();
+        }
+
+        function resetContactsForm() {
+            const container = document.getElementById('contactRows');
+            if (container) container.innerHTML = '';
+            const btn = document.getElementById('addContactBtn');
+            if (btn) btn.style.display = 'block';
+            const section = document.getElementById('contactsSection');
+            const chevron = document.getElementById('contactsChevron');
+            if (section) section.style.display = 'none';
+            if (chevron) chevron.style.transform = '';
+            updateContactsBadge();
+        }
+
         function autoSelectAM() {
             console.log('🔍 AutoSelectAM chiamata');
             
