@@ -3478,6 +3478,12 @@
                     <label style="font-weight: 600; color: var(--mida-gray); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 10px; letter-spacing: 0.5px;">📝 Note</label>
                     <div id="detailDescription" style="padding: 16px; background: rgba(107, 91, 149, 0.05); border-radius: 8px; border-left: 4px solid var(--mida-purple); color: var(--mida-navy); line-height: 1.7; font-size: 14px;"></div>
                 </div>
+
+                <!-- Referenti Cliente -->
+                <div id="detailContactsField" style="margin-top: 24px; display: none;">
+                    <label style="font-weight: 600; color: var(--mida-gray); font-size: 12px; text-transform: uppercase; display: block; margin-bottom: 10px; letter-spacing: 0.5px;">👤 Referenti Cliente</label>
+                    <div id="detailContacts"></div>
+                </div>
                 
                 <div style="margin-top: 24px; padding: 18px; background: rgba(221, 133, 119, 0.1); border-left: 4px solid var(--mida-coral); border-radius: 8px;">
                     <div style="font-size: 14px; color: var(--mida-navy); line-height: 1.6;">
@@ -3586,7 +3592,8 @@
                 ownerPct: rawDeal.owner_pct != null ? rawDeal.owner_pct : 100,
                 coOwners: rawDeal.co_owners || [],
                 notes: rawDeal.notes,
-                description: rawDeal.description
+                description: rawDeal.description,
+                contacts: rawDeal.contacts || []
             } : window.allOpportunities.find(d => d.id === dealId);
             console.log('Deal trovato:', deal);
             
@@ -3688,6 +3695,31 @@
                 document.getElementById('detailDescription').textContent = deal.description || deal.notes || '';
             } else {
                 document.getElementById('detailDescriptionField').style.display = 'none';
+            }
+
+            // Referenti Cliente
+            const contacts = deal.contacts || [];
+            const contactsField = document.getElementById('detailContactsField');
+            const contactsEl = document.getElementById('detailContacts');
+            if (contacts.length > 0) {
+                contactsField.style.display = 'block';
+                contactsEl.innerHTML = contacts.map(c => `
+                    <div style="display:flex; align-items:center; gap:12px; padding:10px 14px;
+                        background:rgba(107,91,149,0.04); border:1px solid rgba(107,91,149,0.12);
+                        border-radius:8px; margin-bottom:8px;">
+                        <div style="width:34px; height:34px; border-radius:9px;
+                            background:linear-gradient(135deg,#6b5b95,#bc6c8e);
+                            display:flex; align-items:center; justify-content:center;
+                            color:white; font-weight:800; font-size:13px; flex-shrink:0;">
+                            ${c.name.trim().split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-weight:700; color:var(--mida-navy); font-size:14px;">${c.name}</div>
+                            ${c.role ? `<div style="font-size:11px; color:var(--mida-purple); font-weight:600; margin-top:2px;">${c.role}</div>` : ''}
+                        </div>
+                    </div>`).join('');
+            } else {
+                contactsField.style.display = 'none';
             }
             
             // Mostra modal
