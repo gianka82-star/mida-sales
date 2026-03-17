@@ -252,9 +252,9 @@
         <div class="form-group">
             <label>Password Admin</label>
             <input type="password" id="adminPwd" placeholder="Password amministratore"
-                onkeydown="if(event.key==='Enter') doAdminLogin()">
+                id="adminPwdInput">
         </div>
-        <button class="login-btn" id="loginBtn" onclick="doAdminLogin()">Accedi</button>
+        <button class="login-btn" id="loginBtn">Accedi</button>
     </div>
 </div>
 
@@ -1583,4 +1583,27 @@
             if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
             resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;';
             resultEl.innerHTML = `✅ Email inviata a <strong>${data.sent}</strong> AM.` +
-                (data.failed > 0 ?
+                (data.failed > 0 ?` <span style="color:#991b1b;">(${data.failed} fallite)</span>` : '');
+        } catch(e) {
+            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
+            resultEl.innerHTML = `❌ Errore: ${e.message}`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '📧 Invia Email';
+        }
+    }
+
+    // ── Event listeners login admin (bypass Cloudflare onclick injection) ──
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginBtn = document.getElementById('loginBtn');
+        const pwdInput = document.getElementById('adminPwdInput') ||
+                         document.querySelector('input[type="password"]');
+        if (loginBtn) loginBtn.addEventListener('click', doAdminLogin);
+        if (pwdInput) pwdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doAdminLogin();
+        });
+    });
+
+</script>
+</body>
+</html>
