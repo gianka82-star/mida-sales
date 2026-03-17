@@ -1532,67 +1532,6 @@
         btn.disabled = true; btn.textContent = '⏳ Invio in corso...';
         resultEl.style.display = 'none';
 
-        try {
-            const res = await fetch(`${SUPABASE_URL_PUSH}/functions/v1/send-admin-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY_PUSH, 'Authorization': `Bearer ${SUPABASE_KEY_PUSH}` },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;';
-            resultEl.innerHTML = `✅ Email inviata a <strong>${data.sent}</strong> AM.` +
-                (data.failed > 0 ? ` <span style="color:#991b1b;">(${data.failed} fallite)</span>` : '');
-        } catch(e) {
-            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
-            resultEl.innerHTML = `❌ Errore: ${e.message}`;
-        } finally {
-            btn.disabled = false; btn.textContent = '📧 Invia Email';
-        }
-    }
-        const subject  = document.getElementById('emailSubject').value.trim();
-        const body     = document.getElementById('emailBody').value.trim();
-        const resultEl = document.getElementById('emailResult');
-        const btn      = document.getElementById('emailSendBtn');
-
-        if (!subject) { alert('Inserisci l\'oggetto della email.'); return; }
-        if (!body)    { alert('Inserisci il testo della email.'); return; }
-
-        const selected = Array.from(document.querySelectorAll('.email-am-check:checked'))
-            .map(cb => ({ amKey: cb.dataset.amkey, email: cb.dataset.email }));
-
-        if (selected.length === 0) { alert('Seleziona almeno un destinatario.'); return; }
-        if (!confirm(`Stai per inviare una email a ${selected.length} AM. Confermi?`)) return;
-
-        btn.disabled = true;
-        btn.textContent = '⏳ Invio in corso...';
-        resultEl.style.display = 'none';
-
-        try {
-            const res = await fetch(`${SUPABASE_URL_PUSH}/functions/v1/send-admin-email`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_KEY_PUSH,
-                    'Authorization': `Bearer ${SUPABASE_KEY_PUSH}`
-                },
-                body: JSON.stringify({ subject, body, recipients: selected })
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;';
-            resultEl.innerHTML = `✅ Email inviata a <strong>${data.sent}</strong> AM.` +
-                (data.failed > 0 ?` <span style="color:#991b1b;">(${data.failed} fallite)</span>` : '');
-        } catch(e) {
-            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
-            resultEl.innerHTML = `❌ Errore: ${e.message}`;
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '📧 Invia Email';
-        }
-    }
-
     // ── Event listeners login admin (bypass Cloudflare onclick injection) ──
     document.addEventListener('DOMContentLoaded', function() {
         const loginBtn = document.getElementById('loginBtn');
