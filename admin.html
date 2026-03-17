@@ -537,6 +537,18 @@
         <label style="display:block; font-size:13px; font-weight:600; color:#2d2654; margin-bottom:6px;">Iniziali</label>
         <input type="text" id="editInitials" maxlength="3" style="width:100%; padding:10px 12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; box-sizing:border-box;">
       </div>
+      <div>
+        <label style="display:block; font-size:13px; font-weight:600; color:#2d2654; margin-bottom:6px;">📧 Email</label>
+        <input type="email" id="editEmail" placeholder="nome.cognome@mida.it"
+          style="width:100%; padding:10px 12px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; box-sizing:border-box;">
+      </div>
+      <div style="display:flex; align-items:center; gap:12px; padding:10px 14px; background:#f8f7ff; border-radius:8px; border:1.5px solid rgba(107,91,149,0.15);">
+        <input type="checkbox" id="editNotifyEmail" style="width:18px; height:18px; accent-color:#6b5b95; cursor:pointer; flex-shrink:0;">
+        <div>
+          <label for="editNotifyEmail" style="font-size:13px; font-weight:600; color:#2d2654; cursor:pointer; display:block;">🔔 Notifiche email attive</label>
+          <span style="font-size:11px; color:#6b7280;">Riceve email per cambio stage e share opportunità</span>
+        </div>
+      </div>
     </div>
     <div id="editError" style="display:none; background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px;"></div>
     <div style="display:flex; gap:12px; justify-content:flex-end;">
@@ -706,11 +718,12 @@
                     <span class="${u.active ? 'badge-active' : 'badge-inactive'}">
                         ${u.active ? 'Attivo' : 'Disabilitato'}
                     </span>
+                    ${u.email ? `<span title="${u.email}" style="margin-left:6px; font-size:13px; cursor:default;">📧</span>` : '<span title="Email non configurata" style="margin-left:6px; font-size:13px; opacity:0.3; cursor:default;">📧</span>'}
                 </td>
                 <td>
                     <div class="actions">
                         <button class="btn btn-ghost" 
-                            onclick="openEditModal('${u.username}', '${u.full_name}', '${u.am_key}', '${u.initials}')">
+                            onclick="openEditModal('${u.username}', '${u.full_name}', '${u.am_key}', '${u.initials}', '${u.email || ''}', ${u.notify_email !== false})">
                             ✏️ Modifica
                         </button>
                         <button class="btn ${u.active ? 'btn-danger' : 'btn-success'}" 
@@ -743,12 +756,14 @@
 
 
     // ── EDIT USER ────────────────────────────────────────────
-    function openEditModal(username, fullName, amKey, initials) {
+    function openEditModal(username, fullName, amKey, initials, email, notifyEmail) {
         document.getElementById('editOriginalUsername').value = username;
         document.getElementById('editUsername').value = username;
         document.getElementById('editFullName').value = fullName;
         document.getElementById('editAmKey').value = amKey;
         document.getElementById('editInitials').value = initials;
+        document.getElementById('editEmail').value = email || '';
+        document.getElementById('editNotifyEmail').checked = notifyEmail !== false;
         document.getElementById('editError').style.display = 'none';
         document.getElementById('editModal').style.display = 'flex';
     }
@@ -778,13 +793,17 @@
         try {
             if (username !== originalUsername) {
                 // Username cambiato: inserisci nuovo record e cancella vecchio
-                const insertOk = await sbUpsert('mida_users', { username, am_key: amKey, full_name: fullName, initials, active: true });
+                const emailIns = document.getElementById('editEmail').value.trim() || null;
+                const notifyIns = document.getElementById('editNotifyEmail').checked;
+                const insertOk = await sbUpsert('mida_users', { username, am_key: amKey, full_name: fullName, initials, active: true, email: emailIns, notify_email: notifyIns });
                 if (!insertOk) throw new Error('Insert failed');
                 await sbDelete('mida_users', `?username=eq.${encodeURIComponent(originalUsername)}`);
             } else {
                 // Solo aggiornamento campi
+                const email       = document.getElementById('editEmail').value.trim() || null;
+                const notifyEmail = document.getElementById('editNotifyEmail').checked;
                 const ok = await sbPatch('mida_users', `?username=eq.${encodeURIComponent(originalUsername)}`, {
-                    am_key: amKey, full_name: fullName, initials
+                    am_key: amKey, full_name: fullName, initials, email, notify_email: notifyEmail
                 });
                 if (!ok) throw new Error('Patch failed');
             }
@@ -794,7 +813,9 @@
                 if (username !== originalUsername) {
                     users[idx] = { ...users[idx], username, am_key: amKey, full_name: fullName, initials };
                 } else {
-                    users[idx] = { ...users[idx], am_key: amKey, full_name: fullName, initials };
+                    const emailSaved = document.getElementById('editEmail').value.trim() || null;
+                    const notifySaved = document.getElementById('editNotifyEmail').checked;
+                    users[idx] = { ...users[idx], am_key: amKey, full_name: fullName, initials, email: emailSaved, notify_email: notifySaved };
                 }
                 users.sort((a, b) => a.full_name.localeCompare(b.full_name));
             }
