@@ -429,6 +429,18 @@
                 </div>
             </div>
 
+            <!-- Tipo email -->
+            <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+                <button id="emailTypeGeneric" onclick="setEmailType('generic')"
+                    style="padding:9px 18px; background:#6b5b95; color:white; border:2px solid #6b5b95; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                    📢 Messaggio
+                </button>
+                <button id="emailTypeCredentials" onclick="setEmailType('credentials')"
+                    style="padding:9px 18px; background:white; color:#6b5b95; border:2px solid #6b5b95; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;">
+                    🔑 Credenziali accesso
+                </button>
+            </div>
+
             <div style="display:grid; gap:16px; max-width:640px;">
 
                 <!-- Destinatari -->
@@ -446,25 +458,38 @@
                     <div id="emailAMCount" style="font-size:12px; color:var(--gray); margin-top:6px;"></div>
                 </div>
 
-                <!-- Oggetto -->
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>Oggetto</label>
-                    <input type="text" id="emailSubject" placeholder="Es: Aggiornamento pipeline — Marzo 2026" 
-                        style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box;">
+                <!-- Pannello: Messaggio generico -->
+                <div id="emailGenericPanel">
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label>Oggetto</label>
+                        <input type="text" id="emailSubject" placeholder="Es: Aggiornamento pipeline — Marzo 2026"
+                            style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box;">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Messaggio</label>
+                        <textarea id="emailBody" rows="5"
+                            style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box; resize:vertical; font-family:inherit; line-height:1.6;"
+                            placeholder="Scrivi il testo della email..."></textarea>
+                    </div>
                 </div>
 
-                <!-- Messaggio -->
-                <div class="form-group" style="margin-bottom:0;">
-                    <label>Messaggio</label>
-                    <textarea id="emailBody" rows="5"
-                        style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box; resize:vertical; font-family:inherit; line-height:1.6;"
-                        placeholder="Scrivi il testo della email...&#10;&#10;Puoi usare più righe."></textarea>
+                <!-- Pannello: Credenziali accesso -->
+                <div id="emailCredentialsPanel" style="display:none;">
+                    <div style="background:#fff8f0; border:1.5px solid #fde68a; border-radius:10px; padding:14px 16px; margin-bottom:14px; font-size:13px; color:#92400e; line-height:1.6;">
+                        🔑 Verranno inviate le credenziali personali di ogni AM selezionato (username + password).<br>
+                        Assicurati che ogni AM abbia la password impostata in mida_users prima di inviare.
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Password dashboard (opzionale)</label>
+                        <input type="text" id="emailSharedPassword" placeholder="Es: salesreview26 — lascia vuoto per non includerla"
+                            style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:10px; font-size:14px; box-sizing:border-box; font-family:monospace;">
+                        <div style="font-size:11px; color:var(--gray); margin-top:4px;">Se compilata, verrà inclusa nell'email come password per la dashboard in sola lettura.</div>
+                    </div>
                 </div>
 
-                <!-- Preview -->
+                <!-- Info mittente -->
                 <div style="font-size:12px; color:var(--gray); background:#f8f7ff; padding:10px 14px; border-radius:8px; border:1px solid rgba(107,91,149,0.15);">
-                    📤 Le email vengono inviate da <strong>mida4digital@gmail.com</strong> con template MIDA branded.<br>
-                    Solo gli AM con email configurata e notifiche attive riceveranno il messaggio.
+                    📤 Le email vengono inviate da <strong>mida4digital@gmail.com</strong> con template MIDA branded.
                 </div>
 
                 <!-- Risultato -->
@@ -476,7 +501,7 @@
                         class="btn btn-primary" style="background:#6b5b95; min-width:160px;">
                         📧 Invia Email
                     </button>
-                    <button onclick="previewEmail()" 
+                    <button onclick="previewEmail()"
                         style="padding:10px 18px; border:2px solid #6b5b95; color:#6b5b95; background:white; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;">
                         👁 Anteprima
                     </button>
@@ -640,7 +665,7 @@
 
 <div id="toast"></div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     const SUPABASE_URL = 'https://pvnymhvuextryeoxgave.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_mG0p-MG7h1Qik-Yn4EUV6g_buzm2plv';
 
@@ -1404,7 +1429,7 @@
             list.innerHTML = emailAMData.map(u => `
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#374151;padding:4px 6px;border-radius:6px;"
                     onmouseover="this.style.background='#f3f0fa'" onmouseout="this.style.background=''">
-                    <input type="checkbox" class="email-am-check" data-amkey="${u.am_key}" data-email="${u.email}"
+                    <input type="checkbox" class="email-am-check" data-amkey="${u.am_key}" data-email="${u.email}" data-name="${u.full_name}"
                         ${u.notify_email !== false ? 'checked' : ''}
                         style="width:15px;height:15px;accent-color:#6b5b95;" onchange="updateEmailCount()">
                     <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${u.email}">
@@ -1456,7 +1481,74 @@
         w.document.close();
     }
 
+    let currentEmailType = 'generic';
+
+    function setEmailType(type) {
+        currentEmailType = type;
+        document.getElementById('emailGenericPanel').style.display      = type === 'generic'     ? 'block' : 'none';
+        document.getElementById('emailCredentialsPanel').style.display  = type === 'credentials' ? 'block' : 'none';
+        document.getElementById('emailTypeGeneric').style.background     = type === 'generic'     ? '#6b5b95' : 'white';
+        document.getElementById('emailTypeGeneric').style.color          = type === 'generic'     ? 'white'   : '#6b5b95';
+        document.getElementById('emailTypeCredentials').style.background = type === 'credentials' ? '#6b5b95' : 'white';
+        document.getElementById('emailTypeCredentials').style.color      = type === 'credentials' ? 'white'   : '#6b5b95';
+    }
+
     async function sendManualEmail() {
+        const resultEl = document.getElementById('emailResult');
+        const btn      = document.getElementById('emailSendBtn');
+        const checkedBoxes = Array.from(document.querySelectorAll('.email-am-check:checked'));
+        if (!checkedBoxes.length) { alert('Seleziona almeno un destinatario.'); return; }
+
+        let payload = { type: currentEmailType, recipients: [] };
+
+        if (currentEmailType === 'generic') {
+            const subject = document.getElementById('emailSubject').value.trim();
+            const body    = document.getElementById('emailBody').value.trim();
+            if (!subject) { alert("Inserisci l'oggetto della email."); return; }
+            if (!body)    { alert("Inserisci il testo della email."); return; }
+            payload.subject    = subject;
+            payload.body       = body;
+            payload.recipients = checkedBoxes.map(cb => ({
+                amKey: cb.dataset.amkey, email: cb.dataset.email, name: cb.dataset.name
+            }));
+        } else {
+            const sharedPwd = document.getElementById('emailSharedPassword').value.trim();
+            if (sharedPwd) payload.sharedPassword = sharedPwd;
+            const amKeys = checkedBoxes.map(cb => cb.dataset.amkey);
+            const usersData = await sbGet('mida_users',
+                `?am_key=in.(${amKeys.map(k => '"'+k+'"').join(',')})&select=am_key,full_name,email,username,password`);
+            if (!usersData?.length) { alert('Errore nel caricamento dati AM.'); return; }
+            payload.recipients = usersData.map(u => ({
+                amKey: u.am_key, email: u.email, name: u.full_name,
+                username: u.username,
+                password: u.password || '(contatta admin per la password)'
+            })).filter(r => r.email);
+            if (!payload.recipients.length) { alert('Nessun AM ha email e credenziali configurate.'); return; }
+        }
+
+        if (!confirm(`Stai per inviare una email a ${payload.recipients.length} AM. Confermi?`)) return;
+        btn.disabled = true; btn.textContent = '⏳ Invio in corso...';
+        resultEl.style.display = 'none';
+
+        try {
+            const res = await fetch(`${SUPABASE_URL_PUSH}/functions/v1/send-admin-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY_PUSH, 'Authorization': `Bearer ${SUPABASE_KEY_PUSH}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;';
+            resultEl.innerHTML = `✅ Email inviata a <strong>${data.sent}</strong> AM.` +
+                (data.failed > 0 ? ` <span style="color:#991b1b;">(${data.failed} fallite)</span>` : '');
+        } catch(e) {
+            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
+            resultEl.innerHTML = `❌ Errore: ${e.message}`;
+        } finally {
+            btn.disabled = false; btn.textContent = '📧 Invia Email';
+        }
+    }
         const subject  = document.getElementById('emailSubject').value.trim();
         const body     = document.getElementById('emailBody').value.trim();
         const resultEl = document.getElementById('emailResult');
@@ -1491,15 +1583,4 @@
             resultEl.innerHTML = `✅ Email inviata a <strong>${data.sent}</strong> AM.` +
                 (data.failed > 0 ? ` <span style="color:#991b1b;">(${data.failed} fallite)</span>` : '');
         } catch(e) {
-            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;';
-            resultEl.innerHTML = `❌ Errore: ${e.message}`;
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '📧 Invia Email';
-        }
-    }
-
-</script>
-
-</body>
-</html>
+            resultEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:14px;background:#fee2e2;color:#991b1b;bord
