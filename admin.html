@@ -491,7 +491,7 @@
 
                 <!-- Info mittente -->
                 <div style="font-size:12px; color:var(--gray); background:#f8f7ff; padding:10px 14px; border-radius:8px; border:1px solid rgba(107,91,149,0.15);">
-                    📤 Le email vengono inviate da <strong>mida4digital@gmail.com</strong> con template MIDA branded.
+                    📤 Le email vengono inviate da <strong>mida4digital&#64;gmail&#46;com</strong> con template MIDA branded.
                 </div>
 
                 <!-- Risultato -->
@@ -1477,7 +1477,7 @@
             <div style="color:#1e2a4a;font-size:15px;line-height:1.7;white-space:pre-wrap;">${body}</div>
           </div>
           <div style="background:#f8f7ff;padding:18px 32px;border-top:1px solid rgba(107,91,149,.1);">
-            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;">MIDA Sales Intelligence · Notifica da mida4digital@gmail.com</p>
+            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;">MIDA Sales Intelligence · Notifica da mida4digital&#64;gmail&#46;com</p>
           </div>
         </div></body></html>`);
         w.document.close();
@@ -1515,17 +1515,24 @@
             }));
         } else {
             const sharedPwd = document.getElementById('emailSharedPassword').value.trim();
+            // Recupera la password condivisa da Supabase se non inserita manualmente
+            let passwordToSend = sharedPwd;
+            if (!passwordToSend) {
+                const cfg = await sbGet('config', '?key=eq.shared_password&select=value');
+                passwordToSend = cfg?.[0]?.value || '(contatta admin)';
+            }
             if (sharedPwd) payload.sharedPassword = sharedPwd;
+            // Query corretta Supabase: am_key=in.(val1,val2)
             const amKeys = checkedBoxes.map(cb => cb.dataset.amkey);
-            const usersData = await sbGet('mida_users',
-                `?am_key=in.(${amKeys.map(k => '"'+k+'"').join(',')})&select=am_key,full_name,email,username,password`);
+            const filter = `?am_key=in.(${amKeys.join(',')})&select=am_key,full_name,email,username`;
+            const usersData = await sbGet('mida_users', filter);
             if (!usersData?.length) { alert('Errore nel caricamento dati AM.'); return; }
             payload.recipients = usersData.map(u => ({
                 amKey: u.am_key, email: u.email, name: u.full_name,
                 username: u.username,
-                password: u.password || '(contatta admin per la password)'
+                password: passwordToSend
             })).filter(r => r.email);
-            if (!payload.recipients.length) { alert('Nessun AM ha email e credenziali configurate.'); return; }
+            if (!payload.recipients.length) { alert('Nessun AM selezionato ha email configurata.'); return; }
         }
 
         if (!confirm(`Stai per inviare una email a ${payload.recipients.length} AM. Confermi?`)) return;
